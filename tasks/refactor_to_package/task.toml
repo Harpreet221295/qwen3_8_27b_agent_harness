@@ -1,0 +1,4 @@
+[task]
+difficulty = "medium"
+tags = ["python", "refactoring"]
+max_steps = 30

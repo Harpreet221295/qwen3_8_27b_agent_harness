@@ -1,0 +1,4 @@
+[task]
+difficulty = "medium"
+tags = ["python", "environment", "terminal"]
+max_steps = 25

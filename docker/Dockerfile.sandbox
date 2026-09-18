@@ -1,0 +1,12 @@
+# Base sandbox image for agent tasks. Build: docker build -t qwen-sandbox:latest -f docker/Dockerfile.sandbox docker/
+FROM ubuntu:24.04
+ENV DEBIAN_FRONTEND=noninteractive PIP_BREAK_SYSTEM_PACKAGES=1 PYTHONUNBUFFERED=1
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 python3-pip python3-venv git build-essential make gcc jq sqlite3 curl wget ca-certificates \
+    tree ripgrep vim-tiny less procps unzip && rm -rf /var/lib/apt/lists/* \
+ && ln -sf /usr/bin/python3 /usr/local/bin/python && pip install --no-cache-dir pytest setuptools wheel
+RUN git config --global user.email "agent@sandbox" && git config --global user.name "agent" \
+ && git config --global init.defaultBranch main
+WORKDIR /app
+RUN mkdir -p /logs/verifier /tests
+CMD ["sleep", "infinity"]

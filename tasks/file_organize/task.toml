@@ -1,0 +1,4 @@
+[task]
+difficulty = "easy"
+tags = ["bash", "terminal", "filesystem"]
+max_steps = 15

@@ -1,0 +1,4 @@
+[task]
+difficulty = "easy"
+tags = ["python", "cli"]
+max_steps = 20

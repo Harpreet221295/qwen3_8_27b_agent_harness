@@ -1,0 +1,4 @@
+[task]
+difficulty = "medium"
+tags = ["sql", "terminal"]
+max_steps = 20

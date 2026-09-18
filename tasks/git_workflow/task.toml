@@ -1,0 +1,4 @@
+[task]
+difficulty = "medium"
+tags = ["git", "terminal"]
+max_steps = 25

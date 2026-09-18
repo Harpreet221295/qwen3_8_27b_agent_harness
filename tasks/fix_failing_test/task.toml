@@ -1,0 +1,4 @@
+[task]
+difficulty = "easy"
+tags = ["python", "debugging", "pytest"]
+max_steps = 20

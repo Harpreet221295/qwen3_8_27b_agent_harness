@@ -1,0 +1,7 @@
+/
+/admin
+/api/orders
+/api/users
+/health
+/login
+/static/app.js

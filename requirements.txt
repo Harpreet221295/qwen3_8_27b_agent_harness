@@ -1,0 +1,7 @@
+openai>=1.50
+docker>=7.1
+python-dotenv>=1.0
+rich>=13
+pytest>=8   # only needed for --sandbox local
+# optional cloud sandbox:
+# e2b-code-interpreter>=1.0

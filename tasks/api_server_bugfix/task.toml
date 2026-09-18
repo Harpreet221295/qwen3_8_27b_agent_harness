@@ -1,0 +1,4 @@
+[task]
+difficulty = "hard"
+tags = ["python", "debugging", "http", "terminal"]
+max_steps = 35
