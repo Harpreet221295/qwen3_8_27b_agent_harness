@@ -1,6 +1,6 @@
-# qwen_agent_harness — agentic coding + terminal-use eval for Qwen3.8-27B
+# qwen3_8_27b_agent_harness — agentic coding + terminal-use eval for Qwen3.8-27B
 
-Runs on your Mac. The model runs on RunPod (see `qwen_vllm_server`). Each task is executed by
+Runs on your Mac. The model runs on RunPod (see `qwen3_8_27b_vllm_server`). Each task is executed by
 the model inside an isolated **sandbox** (Docker container by default), then graded by a test
 script inside that same sandbox. Nothing the model runs touches your Mac.
 
@@ -25,7 +25,7 @@ brew install colima docker
 colima start --cpu 4 --memory 8 --disk 40
 
 # 2. python env
-cd qwen_agent_harness
+cd qwen3_8_27b_agent_harness
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env    # QWEN_BASE_URL, QWEN_API_KEY
