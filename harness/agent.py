@@ -1,7 +1,8 @@
-"""The agent loop: model <-> tools, with transcript, step/token budgets and a fallback tool-call parser."""
+"""The agent loop: model <-> tools, with transcript, step/token budgets, live events and a fallback tool-call parser."""
 from __future__ import annotations
 import json, re, time
 from dataclasses import dataclass, field
+from typing import Callable
 from openai import OpenAI
 from . import config
 from .tools import TOOLS, ToolExecutor
@@ -18,6 +19,7 @@ Rules:
 """
 
 FALLBACK_RE = re.compile(r"<tool_call>\s*(\{.*?\})\s*</tool_call>", re.S)
+EventFn = Callable[[str, dict], None]
 
 
 @dataclass
@@ -36,9 +38,12 @@ class AgentResult:
 
 class Agent:
     def __init__(self, executor: ToolExecutor, thinking: str = "off", max_steps: int = 30, max_tokens: int = 4096,
-                 model: str | None = None, temperature: float | None = None, verbose: bool = False):
+                 model: str | None = None, temperature: float | None = None, verbose: bool = False,
+                 on_event: EventFn | None = None, stream: bool = True, should_stop: Callable[[], bool] | None = None):
         self.ex, self.thinking, self.max_steps, self.max_tokens = executor, thinking, max_steps, max_tokens
         self.model = model or config.MODEL; self.verbose = verbose
+        self.on_event = on_event or (lambda kind, data: None); self.stream = stream
+        self.should_stop = should_stop or (lambda: False)
         self.client = OpenAI(base_url=config.BASE_URL, api_key=config.API_KEY, timeout=900)
         if thinking == "off":
             self.sampling = dict(temperature=0.7 if temperature is None else temperature, top_p=0.8,
@@ -50,36 +55,68 @@ class Agent:
     def log(self, *a):
         if self.verbose: print(*a, flush=True)
 
+    # ---- one model turn -> (content, reasoning, calls, usage, finish_reason) ----
+    def _turn(self, msgs):
+        if self.stream:
+            try: return self._turn_stream(msgs)
+            except Exception as e:
+                self.log("stream failed, falling back to non-stream:", e)
+        r = self.client.chat.completions.create(model=self.model, messages=msgs, tools=TOOLS, tool_choice="auto",
+                                                max_tokens=self.max_tokens, **self.sampling)
+        m = r.choices[0].message
+        reasoning = getattr(m, "reasoning_content", None) or getattr(m, "reasoning", None) or ""
+        if reasoning: self.on_event("reasoning", {"t": reasoning})
+        if m.content: self.on_event("content", {"t": m.content})
+        calls = [(t.id, t.function.name, t.function.arguments) for t in (m.tool_calls or [])]
+        return m.content or "", reasoning, calls, r.usage, r.choices[0].finish_reason
+
+    def _turn_stream(self, msgs):
+        content, reasoning, calls, usage, finish = [], [], {}, None, None
+        stream = self.client.chat.completions.create(model=self.model, messages=msgs, tools=TOOLS, tool_choice="auto",
+                                                     max_tokens=self.max_tokens, stream=True,
+                                                     stream_options={"include_usage": True}, **self.sampling)
+        for chunk in stream:
+            if chunk.usage: usage = chunk.usage
+            if not chunk.choices: continue
+            ch = chunk.choices[0]; d = ch.delta
+            if ch.finish_reason: finish = ch.finish_reason
+            rc = getattr(d, "reasoning_content", None) or getattr(d, "reasoning", None)
+            if rc: reasoning.append(rc); self.on_event("reasoning", {"t": rc})
+            if d.content: content.append(d.content); self.on_event("content", {"t": d.content})
+            for tc in (d.tool_calls or []):
+                c = calls.setdefault(tc.index, {"id": tc.id or f"call_{tc.index}", "name": "", "arguments": ""})
+                if tc.id: c["id"] = tc.id
+                if tc.function and tc.function.name: c["name"] += tc.function.name
+                if tc.function and tc.function.arguments: c["arguments"] += tc.function.arguments
+        return "".join(content), "".join(reasoning), [(c["id"], c["name"], c["arguments"]) for c in calls.values()], usage, finish
+
     def run(self, instruction: str) -> AgentResult:
         msgs = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": instruction}]
         transcript, t0 = [], time.time()
         ptoks = ctoks = fallback = errors = 0
         for step in range(1, self.max_steps + 1):
+            if self.should_stop():
+                return self._done(False, step - 1, "stopped", "", ptoks, ctoks, t0, transcript, fallback, errors)
+            self.on_event("step", {"step": step, "max_steps": self.max_steps})
             try:
-                r = self.client.chat.completions.create(model=self.model, messages=msgs, tools=TOOLS, tool_choice="auto",
-                                                        max_tokens=self.max_tokens, **self.sampling)
+                content, reasoning, calls, usage, finish_reason = self._turn(msgs)
             except Exception as e:
-                errors += 1; transcript.append({"step": step, "error": str(e)[:500]})
+                errors += 1; transcript.append({"step": step, "error": str(e)[:500]}); self.on_event("error", {"message": str(e)[:500]})
                 if errors >= 3: return self._done(False, step, f"api_error: {e}", "", ptoks, ctoks, t0, transcript, fallback, errors)
                 time.sleep(3); continue
-            m = r.choices[0].message
-            if r.usage: ptoks += r.usage.prompt_tokens; ctoks += r.usage.completion_tokens
-            reasoning = getattr(m, "reasoning_content", None) or getattr(m, "reasoning", None) or ""
-            calls = [(t.id, t.function.name, t.function.arguments) for t in (m.tool_calls or [])]
-            content = m.content or ""
+            if usage: ptoks += usage.prompt_tokens; ctoks += usage.completion_tokens
             if not calls:  # fallback: model emitted raw <tool_call> text instead of structured calls
                 for i, mm in enumerate(FALLBACK_RE.finditer(content)):
                     try:
                         d = json.loads(mm.group(1)); calls.append((f"fb{step}_{i}", d["name"], json.dumps(d.get("arguments", {})))); fallback += 1
                     except Exception: pass
-            entry = {"step": step, "reasoning_chars": len(reasoning), "content": content[:2000], "tool_calls": [], "finish_reason": r.choices[0].finish_reason}
+            entry = {"step": step, "reasoning_chars": len(reasoning), "reasoning": reasoning[:4000], "content": content[:2000], "tool_calls": [], "finish_reason": finish_reason}
             if not calls:
                 msgs.append({"role": "assistant", "content": content})
                 transcript.append(entry)
-                if r.choices[0].finish_reason == "length":
+                if finish_reason == "length":
                     msgs.append({"role": "user", "content": "Your output was cut off. Continue, using tools. Call finish when done."}); continue
-                # model stopped without tools: nudge once, then stop
-                if entry.get("nudged") or any(t.get("nudged") for t in transcript[-3:]):
+                if any(t.get("nudged") for t in transcript[-3:]):
                     return self._done(False, step, "no_tool_call", content, ptoks, ctoks, t0, transcript, fallback, errors)
                 entry["nudged"] = True
                 msgs.append({"role": "user", "content": "Use the tools to act. If the task is complete, call finish."}); continue
@@ -89,7 +126,9 @@ class Agent:
             for cid, name, argstr in calls:
                 try: args = json.loads(argstr) if argstr else {}
                 except json.JSONDecodeError: args = None
+                self.on_event("tool_call", {"step": step, "name": name, "args": args if args is not None else argstr})
                 out = "error: arguments were not valid JSON" if args is None else self.ex.run(name, args)
+                self.on_event("tool_result", {"step": step, "name": name, "output": out})
                 entry["tool_calls"].append({"name": name, "args": args if args is not None else argstr, "output": out[:3000]})
                 self.log(f"[{step}] {name} {json.dumps(args)[:200] if args else argstr[:200]}\n    -> {out[:300]!r}")
                 msgs.append({"role": "tool", "tool_call_id": cid, "content": out})
@@ -99,6 +138,8 @@ class Agent:
             transcript.append(entry)
         return self._done(False, self.max_steps, "max_steps", "", ptoks, ctoks, t0, transcript, fallback, errors)
 
-    @staticmethod
-    def _done(fin, steps, why, summary, p, c, t0, tr, fb, er):
-        return AgentResult(fin, steps, why, summary, p, c, time.time() - t0, tr, fb, er)
+    def _done(self, fin, steps, why, summary, p, c, t0, tr, fb, er):
+        res = AgentResult(fin, steps, why, summary, p, c, time.time() - t0, tr, fb, er)
+        self.on_event("agent_done", {"finished": fin, "steps": steps, "stop_reason": why, "summary": summary,
+                                     "prompt_tokens": p, "completion_tokens": c, "wall_s": round(res.wall_s, 1)})
+        return res

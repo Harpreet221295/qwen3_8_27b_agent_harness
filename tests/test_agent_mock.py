@@ -21,7 +21,7 @@ class FakeCompletions:
 
 def make_agent(script, **kw):
     sb = LocalSandbox(); sb.start()
-    ag = Agent(ToolExecutor(sb), thinking="off", max_steps=10, **kw)
+    ag = Agent(ToolExecutor(sb), thinking="off", max_steps=10, stream=False, **kw)  # fake client is non-streaming
     ag.client = NS(chat=NS(completions=FakeCompletions(script)))
     return ag, sb
 

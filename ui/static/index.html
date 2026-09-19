@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Qwen agent console</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<style>
+:root{--bg:#0f1117;--panel:#171a23;--line:#262b38;--fg:#e6e8ef;--mut:#8b93a7;--acc:#7c9cff;--think:#c9a86a;--ok:#4cc38a;--err:#ef6b73;--tool:#6fb3d2}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 -apple-system,Inter,Segoe UI,sans-serif;height:100vh;display:flex;flex-direction:column}
+header{display:flex;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}header b{font-size:15px}header .st{color:var(--mut);font-size:12px;margin-left:auto}
+nav button{background:none;border:1px solid var(--line);color:var(--fg);padding:5px 10px;border-radius:6px;cursor:pointer}nav button.on{background:var(--acc);color:#000;border-color:var(--acc)}
+main{flex:1;display:grid;grid-template-columns:340px 1fr;min-height:0}
+aside{border-right:1px solid var(--line);padding:14px;overflow:auto;background:var(--panel)}
+aside label{display:block;color:var(--mut);font-size:12px;margin:10px 0 4px}aside select,aside input,aside textarea{width:100%;background:#0d0f15;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:6px}
+aside textarea{min-height:120px;resize:vertical;font-size:13px}.row{display:flex;gap:8px}.row>*{flex:1}
+#run{width:100%;margin-top:14px;background:var(--acc);color:#000;border:0;border-radius:8px;padding:10px;font-weight:600;cursor:pointer}#run.stop{background:var(--err);color:#fff}
+#instr{color:var(--mut);font-size:12px;white-space:pre-wrap;background:#0d0f15;border:1px solid var(--line);border-radius:6px;padding:8px;max-height:220px;overflow:auto;margin-top:6px}
+#live{overflow:auto;padding:16px 20px}#runs{overflow:auto;padding:16px 20px}.hide{display:none}
+.step{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:8px 12px;margin-bottom:10px;max-width:1100px}
+.step .hd{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.think{border-left:3px solid var(--think);background:#1a1810;color:#d8c9a3;padding:6px 10px;border-radius:6px;margin:6px 0;white-space:pre-wrap;font-size:12.5px;max-height:220px;overflow:auto}
+.say{margin:6px 0}.say p{margin:.3em 0}
+.tc{border-left:3px solid var(--tool);background:#101a22;padding:6px 10px;border-radius:6px;margin:6px 0;font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap}
+.tc .n{color:var(--tool);font-weight:700}.out{color:#b7c2d0;border-left:3px solid #2f3b4a;background:#0d1117;padding:6px 10px;border-radius:6px;margin:4px 0 8px;font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap;max-height:260px;overflow:auto}
+.status{color:var(--mut);font-size:12px;margin:6px 0}.grade{border-radius:10px;padding:10px 14px;margin:10px 0;font-weight:600}.grade.ok{background:#12291d;border:1px solid var(--ok)}.grade.bad{background:#2b1518;border:1px solid var(--err)}
+.grade pre{font-weight:400;font-size:12px;white-space:pre-wrap;max-height:200px;overflow:auto;margin:6px 0 0}
+.err{color:var(--err)}table{border-collapse:collapse;width:100%;max-width:1000px}th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--mut)}tr.c{cursor:pointer}tr.c:hover{background:var(--panel)}
+.md pre{background:#0d0f15;padding:8px;border-radius:6px;overflow:auto;font-size:12px}
+</style></head><body>
+<header><b>Qwen3.8-27B agent console</b><nav><button id="tabLive" class="on">Run</button><button id="tabRuns">Past runs</button></nav><span class="st" id="status">…</span></header>
+<main>
+<aside>
+  <label>Task</label><select id="task"><option value="">— custom instruction —</option></select>
+  <div id="instr">Pick a task to see its instruction, or write your own below.</div>
+  <label>Custom instruction (overrides the task's text; graded only when a task is selected and you leave this empty)</label>
+  <textarea id="custom" placeholder="e.g. Create a Python script that prints the first 20 primes, run it, and show me the output."></textarea>
+  <div class="row"><div><label>Thinking</label><select id="mode"><option value="off">off</option><option value="low">low</option><option value="medium">medium</option><option value="xhigh">xhigh</option></select></div>
+  <div><label>Sandbox</label><select id="sandbox"><option value="docker">docker</option><option value="local">local (no isolation)</option><option value="e2b">e2b</option></select></div></div>
+  <div class="row"><div><label>Max steps</label><input id="steps" type="number" value="30"></div><div><label>Max tokens / turn</label><input id="maxtok" type="number" placeholder="auto"></div></div>
+  <label><input id="net" type="checkbox" style="width:auto"> allow internet in sandbox</label>
+  <button id="run">▶ Run agent</button>
+</aside>
+<section id="live"></section>
+<section id="runs" class="hide"></section>
+</main>
+<script>
+const $=s=>document.querySelector(s);const live=$('#live');let tasks=[],job=null,ctrl=null;marked.setOptions({breaks:true});
+fetch('/api/info').then(r=>r.json()).then(i=>{$('#status').textContent=`${i.model} · ${i.base_url.replace('https://','')} · docker ${i.docker?'ok':'NOT RUNNING (colima start)'}`;if(!i.docker)$('#status').classList.add('err')});
+fetch('/api/tasks').then(r=>r.json()).then(t=>{tasks=t;t.forEach(x=>{const o=document.createElement('option');o.value=x.name;o.textContent=`${x.name}  (${x.difficulty})`;$('#task').appendChild(o)})});
+$('#task').onchange=()=>{const t=tasks.find(x=>x.name===$('#task').value);$('#instr').textContent=t?t.instruction:'Pick a task to see its instruction, or write your own below.';if(t)$('#steps').value=t.max_steps};
+$('#tabLive').onclick=()=>{live.classList.remove('hide');$('#runs').classList.add('hide');$('#tabLive').classList.add('on');$('#tabRuns').classList.remove('on')};
+$('#tabRuns').onclick=()=>{live.classList.add('hide');$('#runs').classList.remove('hide');$('#tabRuns').classList.add('on');$('#tabLive').classList.remove('on');loadRuns()};
+function el(h){const d=document.createElement('div');d.innerHTML=h;return d.firstElementChild}function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+$('#run').onclick=async()=>{
+  if(job){fetch('/api/stop/'+job,{method:'POST'});$('#run').textContent='stopping…';return}
+  live.innerHTML='';const body={task:$('#task').value||null,instruction:$('#custom').value,thinking:$('#mode').value,sandbox:$('#sandbox').value,max_steps:+$('#steps').value,network:$('#net').checked};
+  if($('#maxtok').value)body.max_tokens=+$('#maxtok').value;
+  if(!body.task&&!body.instruction.trim()){alert('Pick a task or write an instruction');return}
+  $('#run').textContent='■ Stop';$('#run').classList.add('stop');
+  let step=null,think=null,say=null,sayTxt='',thinkTxt='';
+  const r=await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const rd=r.body.getReader(),dec=new TextDecoder();let buf='';
+  while(true){const{done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
+    while((i=buf.indexOf('\n\n'))>=0){const blk=buf.slice(0,i);buf=buf.slice(i+2);const ev=/event: (\w+)/.exec(blk)?.[1];const d=JSON.parse(/data: (.*)/s.exec(blk)[1]);
+      if(ev==='job')job=d.job;
+      else if(ev==='status')live.appendChild(el(`<div class="status">${esc(d.t)}</div>`));
+      else if(ev==='step'){step=el(`<div class="step"><div class="hd">step ${d.step} / ${d.max_steps}</div></div>`);live.appendChild(step);think=null;say=null;sayTxt='';thinkTxt=''}
+      else if(ev==='reasoning'){if(!think){think=el('<div class="think"></div>');step.appendChild(think)}thinkTxt+=d.t;think.textContent=thinkTxt;think.scrollTop=think.scrollHeight}
+      else if(ev==='content'){if(!say){say=el('<div class="say md"></div>');step.appendChild(say)}sayTxt+=d.t;say.innerHTML=marked.parse(sayTxt)}
+      else if(ev==='tool_call'){step.appendChild(el(`<div class="tc"><span class="n">🔧 ${esc(d.name)}</span> ${esc(typeof d.args==='string'?d.args:JSON.stringify(d.args,null,1))}</div>`))}
+      else if(ev==='tool_result'){step.appendChild(el(`<div class="out">${esc(d.output)}</div>`))}
+      else if(ev==='agent_done'){live.appendChild(el(`<div class="status">agent ${d.finished?'finished':'stopped'} · ${d.stop_reason} · ${d.steps} steps · ${d.wall_s}s · ${d.completion_tokens} tokens generated${d.summary?'<br>📝 '+esc(d.summary):''}</div>`))}
+      else if(ev==='grade'){live.appendChild(el(`<div class="grade ${d.passed?'ok':'bad'}">${d.passed?'✅ PASSED':'❌ FAILED'} · reward ${d.reward}<pre>${esc(d.test_output)}</pre></div>`))}
+      else if(ev==='error'){live.appendChild(el(`<div class="status err">${esc(d.message)}</div>`))}
+      else if(ev==='saved'){live.appendChild(el(`<div class="status">saved ${esc(d.path)}</div>`))}
+      live.scrollTop=live.scrollHeight}}
+  job=null;$('#run').textContent='▶ Run agent';$('#run').classList.remove('stop');
+};
+async function loadRuns(){const rs=await (await fetch('/api/runs')).json();
+  $('#runs').innerHTML=rs.length?rs.map(r=>`<details><summary style="cursor:pointer"><b>${r.run_id}</b> — ${r.passed}/${r.n}</summary><div class="md">${marked.parse(r.markdown)}</div><div id="d_${r.run_id}"><button onclick="showRun('${r.run_id}')" style="background:none;border:1px solid var(--line);color:var(--fg);padding:4px 8px;border-radius:6px;cursor:pointer">show transcripts</button></div></details>`).join(''):'<p>No runs yet.</p>'}
+async function showRun(id){const recs=await (await fetch('/api/runs/'+id)).json();const box=document.getElementById('d_'+id);
+  box.innerHTML=recs.map(r=>`<details class="step"><summary style="cursor:pointer">${r.passed?'✅':'❌'} ${r.task} · ${r.steps??'-'} steps · ${r.wall_s}s · ${r.stop_reason??''}</summary>${(r.transcript||[]).map(e=>`<div class="hd">step ${e.step}</div>${e.reasoning?`<div class="think">${esc(e.reasoning)}</div>`:''}${e.content?`<div class="say md">${marked.parse(e.content)}</div>`:''}${(e.tool_calls||[]).map(t=>`<div class="tc"><span class="n">🔧 ${esc(t.name)}</span> ${esc(JSON.stringify(t.args,null,1))}</div><div class="out">${esc(t.output)}</div>`).join('')}`).join('')}${r.test_output?`<div class="grade ${r.passed?'ok':'bad'}">grader<pre>${esc(r.test_output)}</pre></div>`:''}</details>`).join('')}
+</script></body></html>

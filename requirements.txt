@@ -5,3 +5,5 @@ rich>=13
 pytest>=8   # only needed for --sandbox local
 # optional cloud sandbox:
 # e2b-code-interpreter>=1.0
+fastapi>=0.115
+uvicorn>=0.30

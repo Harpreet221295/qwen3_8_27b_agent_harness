@@ -34,6 +34,15 @@ cp .env.example .env    # QWEN_BASE_URL, QWEN_API_KEY
 docker build -t qwen-sandbox:latest -f docker/Dockerfile.sandbox docker/
 ```
 
+## Console UI
+```bash
+.venv/bin/python -m uvicorn ui.app:app --port 7861
+```
+Open http://localhost:7861. Pick a task or type your own instruction, choose thinking mode and sandbox, and watch
+the agent's reasoning, tool calls and tool outputs stream live step by step, then the grade. Stop button aborts
+between steps. The "Past runs" tab browses every `results/` run with full transcripts. UI runs are saved under
+`results/ui_runs/`.
+
 ## Run
 ```bash
 python run_eval.py --oracle                 # sanity: run reference solutions, all tasks must pass
