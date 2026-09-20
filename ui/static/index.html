@@ -33,7 +33,7 @@ aside textarea{min-height:120px;resize:vertical;font-size:13px}.row{display:flex
 <aside>
   <label>Task</label><select id="task"><option value="">— custom instruction —</option></select>
   <div id="instr">Pick a task to see its instruction, or write your own below.</div>
-  <label>Custom instruction (overrides the task's text; graded only when a task is selected and you leave this empty)</label>
+  <label>Custom instruction — if you type here, the task's files are still loaded but its grader is NOT run</label>
   <textarea id="custom" placeholder="e.g. Create a Python script that prints the first 20 primes, run it, and show me the output."></textarea>
   <div class="row"><div><label>Thinking</label><select id="mode"><option value="off">off</option><option value="low">low</option><option value="medium">medium</option><option value="xhigh">xhigh</option></select></div>
   <div><label>Sandbox</label><select id="sandbox"><option value="docker">docker</option><option value="local">local ⚠ runs on YOUR Mac, no isolation</option><option value="e2b">e2b</option></select></div></div>
@@ -58,7 +58,10 @@ fetch('/api/tasks').then(r=>r.json()).then(t=>{tasks=t;t.forEach(x=>{const o=doc
 $('#task').onchange=()=>{const t=tasks.find(x=>x.name===$('#task').value);$('#instr').textContent=t?t.instruction:'Pick a task to see its instruction, or write your own below.';if(t)$('#steps').value=t.max_steps};
 $('#tabLive').onclick=()=>{live.classList.remove('hide');$('#runs').classList.add('hide');$('#tabLive').classList.add('on');$('#tabRuns').classList.remove('on')};
 $('#tabRuns').onclick=()=>{live.classList.add('hide');$('#runs').classList.remove('hide');$('#tabRuns').classList.add('on');$('#tabLive').classList.remove('on');loadRuns()};
-function el(h){const d=document.createElement('div');d.innerHTML=h;return d.firstElementChild}function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+function el(h){const d=document.createElement('div');d.innerHTML=h;return d.firstElementChild}
+function fmtArgs(a){if(typeof a==='string')return esc(a);const long=['content','command','old_string','new_string','summary'];let out='';
+  for(const k of Object.keys(a)){const v=a[k];if(long.includes(k)&&typeof v==='string')out+=`<div><span style="color:var(--mut)">${k}:</span><pre style="margin:2px 0 6px;white-space:pre-wrap">${esc(v)}</pre></div>`;else out+=`<span style="color:var(--mut)">${k}:</span> ${esc(JSON.stringify(v))}  `}
+  return out}function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
 $('#run').onclick=async()=>{
   if(job){fetch('/api/stop/'+job,{method:'POST'});$('#run').textContent='stopping…';return}
   live.innerHTML='';const body={task:$('#task').value||null,instruction:$('#custom').value,thinking:$('#mode').value,sandbox:$('#sandbox').value,max_steps:+$('#steps').value,network:$('#net').checked};
@@ -76,7 +79,7 @@ $('#run').onclick=async()=>{
       else if(ev==='step'){step=el(`<div class="step"><div class="hd">step ${d.step} / ${d.max_steps}</div></div>`);live.appendChild(step);think=null;say=null;sayTxt='';thinkTxt=''}
       else if(ev==='reasoning'){if(!think){think=el('<div class="think"></div>');step.appendChild(think)}thinkTxt+=d.t;think.textContent=thinkTxt;think.scrollTop=think.scrollHeight}
       else if(ev==='content'){if(!say){say=el('<div class="say md"></div>');step.appendChild(say)}sayTxt+=d.t;say.innerHTML=renderMd(sayTxt)}
-      else if(ev==='tool_call'){step.appendChild(el(`<div class="tc"><span class="n">🔧 ${esc(d.name)}</span> ${esc(typeof d.args==='string'?d.args:JSON.stringify(d.args,null,1))}</div>`))}
+      else if(ev==='tool_call'){step.appendChild(el(`<div class="tc"><span class="n">🔧 ${esc(d.name)}</span> ${fmtArgs(d.args)}</div>`))}
       else if(ev==='tool_result'){step.appendChild(el(`<div class="out">${esc(d.output)}</div>`))}
       else if(ev==='agent_done'){live.appendChild(el(`<div class="status">agent ${d.finished?'finished':'stopped'} · ${d.stop_reason} · ${d.steps} steps · ${d.wall_s}s · ${d.completion_tokens} tokens generated${d.summary?'<br>📝 '+esc(d.summary):''}</div>`))}
       else if(ev==='grade'){live.appendChild(el(`<div class="grade ${d.passed?'ok':'bad'}">${d.passed?'✅ PASSED':'❌ FAILED'} · reward ${d.reward}<pre>${esc(d.test_output)}</pre></div>`))}
@@ -88,5 +91,5 @@ $('#run').onclick=async()=>{
 async function loadRuns(){const rs=await (await fetch('/api/runs')).json();
   $('#runs').innerHTML=rs.length?rs.map(r=>`<details><summary style="cursor:pointer"><b>${r.run_id}</b> — ${r.passed}/${r.n}</summary><div class="md">${renderMd(r.markdown)}</div><div id="d_${r.run_id}"><button onclick="showRun('${r.run_id}')" style="background:none;border:1px solid var(--line);color:var(--fg);padding:4px 8px;border-radius:6px;cursor:pointer">show transcripts</button></div></details>`).join(''):'<p>No runs yet.</p>'}
 async function showRun(id){const recs=await (await fetch('/api/runs/'+id)).json();const box=document.getElementById('d_'+id);
-  box.innerHTML=recs.map(r=>`<details class="step"><summary style="cursor:pointer">${r.passed?'✅':'❌'} ${r.task} · ${r.steps??'-'} steps · ${r.wall_s}s · ${r.stop_reason??''}</summary>${(r.transcript||[]).map(e=>`<div class="hd">step ${e.step}</div>${e.reasoning?`<div class="think">${esc(e.reasoning)}</div>`:''}${e.content?`<div class="say md">${renderMd(e.content)}</div>`:''}${(e.tool_calls||[]).map(t=>`<div class="tc"><span class="n">🔧 ${esc(t.name)}</span> ${esc(JSON.stringify(t.args,null,1))}</div><div class="out">${esc(t.output)}</div>`).join('')}`).join('')}${r.test_output?`<div class="grade ${r.passed?'ok':'bad'}">grader<pre>${esc(r.test_output)}</pre></div>`:''}</details>`).join('')}
+  box.innerHTML=recs.map(r=>`<details class="step"><summary style="cursor:pointer">${r.passed?'✅':'❌'} ${r.task} · ${r.steps??'-'} steps · ${r.wall_s}s · ${r.stop_reason??''}</summary>${(r.transcript||[]).map(e=>`<div class="hd">step ${e.step}</div>${e.reasoning?`<div class="think">${esc(e.reasoning)}</div>`:''}${e.content?`<div class="say md">${renderMd(e.content)}</div>`:''}${(e.tool_calls||[]).map(t=>`<div class="tc"><span class="n">🔧 ${esc(t.name)}</span> ${fmtArgs(t.args)}</div><div class="out">${esc(t.output)}</div>`).join('')}`).join('')}${r.test_output?`<div class="grade ${r.passed?'ok':'bad'}">grader<pre>${esc(r.test_output)}</pre></div>`:''}</details>`).join('')}
 </script></body></html>

@@ -70,7 +70,7 @@ async def run(req: Request):
     task_name = body.get("task"); custom = (body.get("instruction") or "").strip()
     sandbox_kind = body.get("sandbox", "docker"); thinking = body.get("thinking", "off")
     max_steps = int(body.get("max_steps", 30)); max_tokens = int(body.get("max_tokens", 4096 if thinking == "off" else 16384))
-    grade = bool(body.get("grade", True)) and bool(task_name)
+    grade = bool(body.get("grade", True)) and bool(task_name) and not custom   # custom text = no grader
     task = next((t for t in load_tasks() if t.name == task_name), None) if task_name else None
     instruction = custom or (task.instruction if task else "")
     if not instruction: return JSONResponse({"error": "no task or instruction"}, status_code=400)
@@ -79,13 +79,13 @@ async def run(req: Request):
     emit = lambda kind, data: q.put((kind, data))
 
     def worker():
-        rec = {"task": task_name or "custom", "rep": 0, "mode": "agent", "thinking": thinking, "model": config.MODEL,
+        rec = {"task": (task_name if not custom else "custom"), "rep": 0, "mode": "agent", "thinking": thinking, "model": config.MODEL,
                "reward": None, "passed": None, "started": datetime.now().isoformat(), "instruction": instruction}
         t0 = time.time()
         try:
             sb_kw = {"image": config.SANDBOX_IMAGE, "network": bool(body.get("network", False)) or bool(task and task.network),
                      "dockerfile_dir": task.env_dir if task and (task.env_dir / "Dockerfile").exists() else None}
-            emit("status", {"t": f"starting {sandbox_kind} sandbox…"})
+            emit("status", {"t": f"starting {sandbox_kind} sandbox… " + ("(task files loaded, custom instruction, no grading)" if task and custom else "(graded)" if grade else "(no grading)")})
             with make_sandbox(sandbox_kind, **sb_kw) as sb:
                 if task and task.env_dir.exists(): sb.upload_dir(task.env_dir, "/app")
                 if task and (task.env_dir / "setup.sh").exists(): sb.exec("bash /app/setup.sh && rm -f /app/setup.sh", timeout=300)
