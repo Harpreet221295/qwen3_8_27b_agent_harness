@@ -9,53 +9,66 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 -apple-system,Inter,Segoe UI,sans-serif;height:100vh;display:flex;flex-direction:column}
 header{display:flex;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}header b{font-size:15px}header .st{color:var(--mut);font-size:12px;margin-left:auto}
 nav button{background:none;border:1px solid var(--line);color:var(--fg);padding:5px 10px;border-radius:6px;cursor:pointer}nav button.on{background:var(--acc);color:#000;border-color:var(--acc)}
-main{flex:1;display:grid;grid-template-columns:300px 1fr;min-height:0}
+main{flex:1;min-height:0}.page{display:grid;grid-template-columns:300px 1fr;height:100%;min-height:0}.hide{display:none!important}
 aside{border-right:1px solid var(--line);padding:14px;overflow:auto;background:var(--panel)}
-aside label{display:block;color:var(--mut);font-size:12px;margin:10px 0 4px}aside select,aside input,aside textarea{width:100%;background:#0d0f15;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:6px}
-.row{display:flex;gap:8px}.row>*{flex:1}
-#work{display:flex;flex-direction:column;min-height:0}
-footer{border-top:1px solid var(--line);padding:12px 20px;background:var(--panel)}
+aside label{display:block;color:var(--mut);font-size:12px;margin:10px 0 4px}aside select,aside input{width:100%;background:#0d0f15;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:6px}
+.row{display:flex;gap:8px}.row>*{flex:1}.btn{background:var(--acc);color:#000;border:0;border-radius:8px;padding:9px;font-weight:600;cursor:pointer;width:100%}
+#instr{color:var(--mut);font-size:12px;white-space:pre-wrap;background:#0d0f15;border:1px solid var(--line);border-radius:6px;padding:8px;max-height:220px;overflow:auto;margin-top:6px}
+.work{display:flex;flex-direction:column;min-height:0}.feed{flex:1;overflow:auto;padding:16px 20px}
+footer{border-top:1px solid var(--line);padding:10px 20px 12px;background:var(--panel)}
+.livebar{max-width:1100px;margin:0 auto 8px;display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--mut);min-height:18px}
+.livebar .dot{width:8px;height:8px;border-radius:50%;background:var(--acc);animation:pulse 1s infinite}.livebar.idle .dot{display:none}
+.livebar .lbl{color:var(--fg)}.livebar .tok{margin-left:auto;font-variant-numeric:tabular-nums}
+@keyframes pulse{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+@keyframes glow{0%,100%{border-left-color:var(--think);box-shadow:none}50%{border-left-color:#ffe2a8;box-shadow:-2px 0 12px -4px #ffd38a}}
+@keyframes spin{to{transform:rotate(360deg)}}
 .box{max-width:1100px;margin:0 auto;display:flex;gap:8px;align-items:flex-end}
 .box textarea{flex:1;background:#0d0f15;border:1px solid var(--line);color:var(--fg);border-radius:10px;padding:10px 12px;min-height:46px;max-height:220px;resize:vertical;font-size:13.5px;font-family:inherit}
-#run{background:var(--acc);color:#000;border:0;border-radius:10px;padding:12px 18px;font-weight:600;cursor:pointer;white-space:nowrap}#run.stop{background:var(--err);color:#fff}
-#instr{color:var(--mut);font-size:12px;white-space:pre-wrap;background:#0d0f15;border:1px solid var(--line);border-radius:6px;padding:8px;max-height:220px;overflow:auto;margin-top:6px}
-#live{flex:1;overflow:auto;padding:16px 20px}#runs{overflow:auto;padding:16px 20px}.hide{display:none!important}
-.step{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:8px 12px;margin-bottom:10px;max-width:1100px}
-.step .hd{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.box button{background:var(--acc);color:#000;border:0;border-radius:10px;padding:12px 18px;font-weight:600;cursor:pointer;white-space:nowrap}.box button.stop{background:var(--err);color:#fff}
+.step{border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:10px;max-width:1100px}
+.step>.hd{display:flex;align-items:center;gap:8px;padding:6px 12px;font-size:11.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;cursor:pointer;user-select:none}
+.step>.hd .chev{display:inline-block;transition:transform .15s}.step.collapsed>.hd .chev{transform:rotate(-90deg)}.step.collapsed>.body{display:none}
+.step>.hd .meta{margin-left:auto;text-transform:none;letter-spacing:0;font-variant-numeric:tabular-nums}.step>.body{padding:2px 12px 8px}
+.step.running>.hd{color:var(--acc)}
 .think{border-left:3px solid var(--think);background:#1a1810;color:#d8c9a3;padding:6px 10px;border-radius:6px;margin:6px 0;white-space:pre-wrap;font-size:12.5px;max-height:220px;overflow:auto}
+.think.live{animation:glow 1.4s infinite}
 .say{margin:6px 0}.say p{margin:.3em 0}
 .tc{border-left:3px solid var(--tool);background:#101a22;padding:6px 10px;border-radius:6px;margin:6px 0;font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap}
-.tc .n{color:var(--tool);font-weight:700}.out{color:#b7c2d0;border-left:3px solid #2f3b4a;background:#0d1117;padding:6px 10px;border-radius:6px;margin:4px 0 8px;font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap;max-height:260px;overflow:auto}
-.status{color:var(--mut);font-size:12px;margin:6px 0}.grade{border-radius:10px;padding:10px 14px;margin:10px 0;font-weight:600}.grade.ok{background:#12291d;border:1px solid var(--ok)}.grade.bad{background:#2b1518;border:1px solid var(--err)}
+.tc .n{color:var(--tool);font-weight:700}.tc .st{float:right;color:var(--mut);font-family:inherit;font-size:11px}
+.tc .spin{display:inline-block;width:10px;height:10px;border:2px solid var(--tool);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-1px}
+.out{color:#b7c2d0;border-left:3px solid #2f3b4a;background:#0d1117;padding:6px 10px;border-radius:6px;margin:4px 0 8px;font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap;max-height:260px;overflow:auto}
+.status{color:var(--mut);font-size:12px;margin:6px 0}.err{color:var(--err)}
+.grade{border-radius:10px;padding:10px 14px;margin:10px 0;font-weight:600;max-width:1100px}.grade.ok{background:#12291d;border:1px solid var(--ok)}.grade.bad{background:#2b1518;border:1px solid var(--err)}
 .grade pre{font-weight:400;font-size:12px;white-space:pre-wrap;max-height:200px;overflow:auto;margin:6px 0 0}
-.err{color:var(--err)}table{border-collapse:collapse;width:100%;max-width:1000px}th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--mut)}tr.c{cursor:pointer}tr.c:hover{background:var(--panel)}
 .ubub{max-width:1100px;margin:0 0 12px;padding:8px 12px;border-radius:10px;border:1px solid #2f3b5e;background:#161c2e}.ubub .hd{font-size:11px;color:var(--mut);text-transform:uppercase}
 .sitem{padding:6px 8px;border:1px solid var(--line);border-radius:6px;margin:4px 0;cursor:pointer;font-size:12px}.sitem.on{border-color:var(--acc)}.sitem .m{color:var(--mut);font-size:11px}.sitem button{float:right;background:none;border:0;color:var(--mut);cursor:pointer}
-#sSend{background:var(--acc);color:#000;border:0;border-radius:10px;padding:12px 18px;font-weight:600;cursor:pointer;white-space:nowrap}#sSend.stop{background:var(--err);color:#fff}
-.md pre{background:#0d0f15;padding:8px;border-radius:6px;overflow:auto;font-size:12px}
+.md pre{background:#0d0f15;padding:8px;border-radius:6px;overflow:auto;font-size:12px}.md code{background:#0d0f15;padding:1px 4px;border-radius:4px}
 .katex-display{overflow-x:auto;padding:4px 0}.katex{font-size:1.05em}
+#runs{padding:16px 20px;overflow:auto;height:100%}.tools-toggle{font-size:11px;color:var(--mut);cursor:pointer;margin-left:8px;text-transform:none;letter-spacing:0}
 </style></head><body>
-<header><b>Qwen3.8-27B agent console</b><nav><button id="tabLive" class="on">Run</button><button id="tabSess">Session</button><button id="tabRuns">Past runs</button></nav><span class="st" id="status">…</span></header>
+<header><b>Qwen3.8-27B agent console</b><nav><button data-tab="run" class="on">Run</button><button data-tab="sess">Session</button><button data-tab="runs">Past runs</button></nav><span class="st" id="status">…</span></header>
 <main>
-<aside id="aside1">
-  <label>Task</label><select id="task"><option value="">— custom instruction —</option></select>
-  <div id="instr">Pick a task to see its instruction, or write your own in the box at the bottom.</div>
-  <div class="row"><div><label>Thinking</label><select id="mode"><option value="off">off</option><option value="low">low</option><option value="medium">medium</option><option value="xhigh">xhigh</option></select></div>
-  <div><label>Sandbox</label><select id="sandbox"><option value="docker">docker</option><option value="local">local ⚠ runs on YOUR Mac, no isolation</option><option value="e2b">e2b</option></select></div></div>
-  <div class="row"><div><label>Max steps</label><input id="steps" type="number" value="30"></div><div><label>Max tokens / turn</label><input id="maxtok" type="number" placeholder="auto"></div></div>
-  <label><input id="net" type="checkbox" style="width:auto"> allow internet in sandbox</label>
-  <p style="color:var(--mut);font-size:11px;margin-top:16px">Typing an instruction below runs it in a fresh sandbox (task files loaded if a task is selected, no grader). Leave it empty and press Run to run the selected task with its grader.</p>
-</aside>
-<section id="work">
-  <div id="live"></div>
-  <footer><div class="box">
-    <textarea id="custom" placeholder="Describe a task for the agent… (Enter to run, Shift+Enter for newline)"></textarea>
-    <button id="run">▶ Run agent</button></div></footer>
-</section>
-<section id="runs" class="hide"></section>
-<section id="sess" style="display:none;grid-column:1/3;grid-template-columns:300px 1fr;min-height:0">
+<!-- ============ RUN: one task, fresh sandbox, graded ============ -->
+<div class="page" id="page-run">
   <aside>
-    <button id="newSess" style="width:100%;background:var(--acc);color:#000;border:0;border-radius:8px;padding:9px;font-weight:600;cursor:pointer">+ New session</button>
+    <label>Task</label><select id="task"><option value="">— custom instruction —</option></select>
+    <div id="instr">Pick a task to see its instruction, or write your own in the box at the bottom.</div>
+    <div class="row"><div><label>Thinking</label><select id="mode"><option value="off">off</option><option value="low">low</option><option value="medium">medium</option><option value="xhigh">xhigh</option></select></div>
+    <div><label>Sandbox</label><select id="sandbox"><option value="docker">docker</option><option value="local">local ⚠ runs on YOUR Mac, no isolation</option><option value="e2b">e2b</option></select></div></div>
+    <div class="row"><div><label>Max steps</label><input id="steps" type="number" value="30"></div><div><label>Max tokens / turn</label><input id="maxtok" type="number" placeholder="auto"></div></div>
+    <label><input id="net" type="checkbox" style="width:auto"> allow internet in sandbox</label>
+    <p style="color:var(--mut);font-size:11px;margin-top:16px">Typing an instruction below runs it in a fresh sandbox (task files loaded if a task is selected, no grader). Leave it empty and press Run to run the selected task with its grader.</p>
+    <label style="margin-top:14px"><input id="autoCollapse" type="checkbox" style="width:auto"> collapse finished steps automatically</label>
+  </aside>
+  <div class="work"><div class="feed" id="feed-run"></div>
+    <footer><div class="livebar idle" id="live-run"><span class="dot"></span><span class="lbl"></span><span class="tok"></span></div>
+    <div class="box"><textarea id="custom" placeholder="Describe a task for the agent… (Enter to run, Shift+Enter for newline)"></textarea><button id="run">▶ Run agent</button></div></footer>
+  </div>
+</div>
+<!-- ============ SESSION: persistent sandbox, chat ============ -->
+<div class="page hide" id="page-sess">
+  <aside>
+    <button class="btn" id="newSess">+ New session</button>
     <div class="row" style="margin-top:8px"><div><label>Thinking</label><select id="sMode"><option value="off">off</option><option value="low">low</option><option value="medium">medium</option><option value="xhigh">xhigh</option></select></div>
     <div><label>Sandbox</label><select id="sSandbox"><option value="docker">docker</option><option value="e2b">e2b</option></select></div></div>
     <label>Start with a task's files (optional)</label><select id="sTask"><option value="">— empty workspace —</option></select>
@@ -63,30 +76,86 @@ footer{border-top:1px solid var(--line);padding:12px 20px;background:var(--panel
     <label style="margin-top:14px">Sessions</label><div id="sessList"></div>
     <p style="color:var(--mut);font-size:11px;margin-top:12px">A session keeps one sandbox alive (2 GB RAM each) until you close it. Files persist across messages. Closed sessions keep their transcript.</p>
   </aside>
-  <div id="work2" style="display:flex;flex-direction:column;min-height:0">
-    <div id="sLive" style="flex:1;overflow:auto;padding:16px 20px"><div class="status">Create a session or pick one on the left.</div></div>
-    <footer><div class="box"><textarea id="sInput" placeholder="Talk to the agent… (Enter to send, Shift+Enter for newline)"></textarea><button id="sSend">Send</button></div></footer>
+  <div class="work"><div class="feed" id="feed-sess"><div class="status">Create a session or pick one on the left.</div></div>
+    <footer><div class="livebar idle" id="live-sess"><span class="dot"></span><span class="lbl"></span><span class="tok"></span></div>
+    <div class="box"><textarea id="sInput" placeholder="Talk to the agent… (Enter to send, Shift+Enter for newline)"></textarea><button id="sSend">Send</button></div></footer>
   </div>
-</section>
+</div>
+<!-- ============ PAST RUNS ============ -->
+<div class="hide" id="page-runs"><div id="runs"></div></div>
 </main>
 <script>
-const $=s=>document.querySelector(s);const live=$('#live');let tasks=[],job=null,ctrl=null;marked.setOptions({breaks:true});
+const $=s=>document.querySelector(s);marked.setOptions({breaks:true});
+function esc(s){return (s??'').toString().replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+function el(h){const d=document.createElement('div');d.innerHTML=h;return d.firstElementChild}
 // markdown + LaTeX: pull math out first so markdown cannot mangle it, render with KaTeX, put it back
 function renderMd(text){const M=[];const keep=(s,d)=>{M.push({s,d});return `@@MATH${M.length-1}@@`};
-  text=text.replace(/\\\[([\s\S]+?)\\\]/g,(m,a)=>keep(a,true)).replace(/\$\$([\s\S]+?)\$\$/g,(m,a)=>keep(a,true))
+  text=(text||'').replace(/\\\[([\s\S]+?)\\\]/g,(m,a)=>keep(a,true)).replace(/\$\$([\s\S]+?)\$\$/g,(m,a)=>keep(a,true))
            .replace(/\\\(([\s\S]+?)\\\)/g,(m,a)=>keep(a,false)).replace(/(^|[^\\$])\$([^\n$]+?)\$(?!\d)/g,(m,p,a)=>p+keep(a,false));
   let html=marked.parse(text);
   return html.replace(/@@MATH(\d+)@@/g,(m,i)=>{try{return katex.renderToString(M[i].s,{displayMode:M[i].d,throwOnError:false})}catch(e){return M[i].s}})}
+function fmtArgs(a){if(typeof a==='string')return esc(a);if(!a)return '';const long=['content','command','old_string','new_string','summary'];let out='';
+  for(const k of Object.keys(a)){const v=a[k];if(long.includes(k)&&typeof v==='string')out+=`<div><span style="color:var(--mut)">${k}:</span><pre style="margin:2px 0 6px;white-space:pre-wrap">${esc(v)}</pre></div>`;else out+=`<span style="color:var(--mut)">${k}:</span> ${esc(JSON.stringify(v))}  `}
+  return out}
+const verb={bash:'running bash',read_file:'reading file',write_file:'writing file',edit_file:'editing file',finish:'finishing'};
+const fmtS=s=>s<60?`${s.toFixed(1)}s`:`${Math.floor(s/60)}m ${Math.round(s%60)}s`;
 
+// ---------- shared live renderer: feeds SSE events into a feed element + live status bar ----------
+function makeRenderer(feed,bar){
+  let step=null,body=null,think=null,say=null,sayTxt='',thinkTxt='',stepT0=0,stepTools=0,toolT0=0,curTc=null,t0=0,chars=0,timer=null,phase='';
+  const lbl=bar.querySelector('.lbl'),tok=bar.querySelector('.tok');
+  const tick=()=>{if(!t0)return;const e=(Date.now()-t0)/1000;lbl.textContent=`${phase}  ·  ${fmtS(e)}`;tok.textContent=`~${Math.round(chars/3.6)} tokens`;if(step&&step.classList.contains('running'))step.querySelector('.meta').textContent=`${stepTools} tool${stepTools===1?'':'s'} · ${fmtS((Date.now()-stepT0)/1000)}`};
+  const setPhase=p=>{phase=p;tick()};
+  const finishStep=()=>{if(!step)return;step.classList.remove('running');step.querySelector('.meta').textContent=`${stepTools} tool${stepTools===1?'':'s'} · ${fmtS((Date.now()-stepT0)/1000)}`;if($('#autoCollapse')?.checked)step.classList.add('collapsed')};
+  const scroll=()=>{feed.scrollTop=feed.scrollHeight};
+  return {
+    start(){t0=Date.now();chars=0;bar.classList.remove('idle');setPhase('starting');timer=setInterval(tick,200)},
+    stop(){finishStep();clearInterval(timer);timer=null;bar.classList.add('idle');lbl.textContent='';tok.textContent='';t0=0;step=null},
+    handle(ev,d){
+      if(ev==='status'){feed.appendChild(el(`<div class="status">${esc(d.t)}</div>`));setPhase(d.t)}
+      else if(ev==='step'){finishStep();stepT0=Date.now();stepTools=0;step=el(`<div class="step running"><div class="hd"><span class="chev">▾</span> step ${d.step}${d.max_steps?' / '+d.max_steps:''}<span class="meta">…</span></div><div class="body"></div></div>`);
+        step.querySelector('.hd').onclick=()=>step.classList.toggle('collapsed');body=step.querySelector('.body');feed.appendChild(step);think=null;say=null;sayTxt='';thinkTxt='';setPhase('thinking')}
+      else if(ev==='reasoning'){if(!think){think=el('<div class="think live"></div>');body.appendChild(think)}thinkTxt+=d.t;chars+=d.t.length;think.textContent=thinkTxt;think.scrollTop=think.scrollHeight;setPhase('thinking')}
+      else if(ev==='content'){if(think)think.classList.remove('live');if(!say){say=el('<div class="say md"></div>');body.appendChild(say)}sayTxt+=d.t;chars+=d.t.length;say.innerHTML=renderMd(sayTxt);setPhase('writing')}
+      else if(ev==='tool_call'){if(think)think.classList.remove('live');stepTools++;toolT0=Date.now();chars+=JSON.stringify(d.args||'').length;
+        curTc=el(`<div class="tc"><span class="st"><span class="spin"></span></span><span class="n">🔧 ${esc(d.name)}</span> ${fmtArgs(d.args)}</div>`);body.appendChild(curTc);setPhase(verb[d.name]||('running '+d.name))}
+      else if(ev==='tool_result'){if(curTc)curTc.querySelector('.st').innerHTML=`✓ ${fmtS((Date.now()-toolT0)/1000)}`;body.appendChild(el(`<div class="out">${esc(d.output)}</div>`));setPhase('thinking')}
+      else if(ev==='agent_done'){finishStep();chars=0;feed.appendChild(el(`<div class="status">${d.finished?'✅ agent finished':'⏹ agent stopped'} · ${d.stop_reason} · ${d.steps} steps · ${d.wall_s}s · ${d.completion_tokens} tokens generated${d.summary&&d.stop_reason==='finish'?'<br>📝 '+esc(d.summary):''}</div>`));tok.textContent=`${d.completion_tokens} tokens`}
+      else if(ev==='grade'){feed.appendChild(el(`<div class="grade ${d.passed?'ok':'bad'}">${d.passed?'✅ PASSED':'❌ FAILED'} · reward ${d.reward}<pre>${esc(d.test_output)}</pre></div>`))}
+      else if(ev==='error'){feed.appendChild(el(`<div class="status err">${esc(d.message)}</div>`))}
+      else if(ev==='saved'){feed.appendChild(el(`<div class="status">saved ${esc(d.path)}</div>`))}
+      scroll()}
+  }}
+async function readSSE(resp,onEvent){const rd=resp.body.getReader(),dec=new TextDecoder();let buf='';
+  while(true){const{done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
+    while((i=buf.indexOf('\n\n'))>=0){const blk=buf.slice(0,i);buf=buf.slice(i+2);const ev=/event: (\w+)/.exec(blk)?.[1];if(!ev)continue;const d=JSON.parse(/data: (.*)/s.exec(blk)[1]);onEvent(ev,d)}}}
+// static transcript renderer (past runs, session history)
+function renderTranscript(tr){return (tr||[]).map(e=>`<div class="step"><div class="hd"><span class="chev">▾</span> step ${e.step}<span class="meta">${(e.tool_calls||[]).length} tools</span></div><div class="body">${e.reasoning?`<div class="think">${esc(e.reasoning)}</div>`:''}${e.content?`<div class="say md">${renderMd(e.content)}</div>`:''}${(e.tool_calls||[]).map(c=>`<div class="tc"><span class="n">🔧 ${esc(c.name)}</span> ${fmtArgs(c.args)}</div><div class="out">${esc(c.output)}</div>`).join('')}</div></div>`).join('')}
+function wireCollapse(root){root.querySelectorAll('.step>.hd').forEach(h=>h.onclick=()=>h.parentElement.classList.toggle('collapsed'))}
+
+// ---------- header / tabs ----------
 fetch('/api/info').then(r=>r.json()).then(i=>{$('#status').textContent=`${i.model} · ${i.base_url.replace('https://','')} · docker ${i.docker?'ok':'NOT RUNNING (colima start)'}`;if(!i.docker)$('#status').classList.add('err')});
-fetch('/api/tasks').then(r=>r.json()).then(t=>{tasks=t;t.forEach(x=>{const o=document.createElement('option');o.value=x.name;o.textContent=`${x.name}  (${x.difficulty})`;$('#task').appendChild(o)})});
+let tasks=[];fetch('/api/tasks').then(r=>r.json()).then(t=>{tasks=t;t.forEach(x=>{const o=document.createElement('option');o.value=x.name;o.textContent=`${x.name}  (${x.difficulty})`;$('#task').appendChild(o);const o2=o.cloneNode(true);o2.textContent=x.name;$('#sTask').appendChild(o2)})});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));['run','sess','runs'].forEach(p=>$('#page-'+p).classList.toggle('hide',p!==b.dataset.tab));if(b.dataset.tab==='runs')loadRuns();if(b.dataset.tab==='sess')loadSessions()});
 $('#task').onchange=()=>{const t=tasks.find(x=>x.name===$('#task').value);$('#instr').textContent=t?t.instruction:'Pick a task to see its instruction, or write your own in the box at the bottom.';if(t)$('#steps').value=t.max_steps};
-$('#tabLive').onclick=()=>{$('#work').classList.remove('hide');$('#runs').classList.add('hide');$('#tabLive').classList.add('on');$('#tabRuns').classList.remove('on')};
-const showTab=(name)=>{['Live','Sess','Runs'].forEach(t=>$('#tab'+t).classList.toggle('on',t===name));$('#work').classList.toggle('hide',name!=='Live');$('#aside1').classList.toggle('hide',name==='Sess');$('#runs').classList.toggle('hide',name!=='Runs');$('#sess').style.display=name==='Sess'?'grid':'none';};
-$('#tabLive').onclick=()=>showTab('Live');$('#tabRuns').onclick=()=>{showTab('Runs');loadRuns()};$('#tabSess').onclick=()=>{showTab('Sess');loadSessions()};
-// ---------------- sessions ----------------
-let cur=null,sBusy=false;const sLive=$('#sLive');
-fetch('/api/tasks').then(r=>r.json()).then(t=>t.forEach(x=>{const o=document.createElement('option');o.value=x.name;o.textContent=x.name;$('#sTask').appendChild(o)}));
+
+// ---------- RUN tab ----------
+let job=null;const R=makeRenderer($('#feed-run'),$('#live-run'));
+$('#custom').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('#run').click()}});
+$('#run').onclick=async()=>{
+  if(job){fetch('/api/stop/'+job,{method:'POST'});$('#run').textContent='stopping…';return}
+  const body={task:$('#task').value||null,instruction:$('#custom').value,thinking:$('#mode').value,sandbox:$('#sandbox').value,max_steps:+$('#steps').value,network:$('#net').checked};
+  if($('#maxtok').value)body.max_tokens=+$('#maxtok').value;
+  if(!body.task&&!body.instruction.trim()){alert('Pick a task or write an instruction');return}
+  if(body.sandbox==='local'&&!confirm('LOCAL sandbox: the model will run commands directly on this Mac with your permissions and no isolation. Only for debugging the harness. Continue?'))return;
+  $('#feed-run').innerHTML='';if(body.instruction.trim())$('#feed-run').appendChild(el(`<div class="ubub"><div class="hd">instruction</div><div class="md">${renderMd(body.instruction)}</div></div>`));
+  $('#run').textContent='■ Stop';$('#run').classList.add('stop');R.start();
+  try{const r=await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    await readSSE(r,(ev,d)=>{if(ev==='job')job=d.job;else R.handle(ev,d)})}catch(e){R.handle('error',{message:String(e)})}
+  R.stop();job=null;$('#run').textContent='▶ Run agent';$('#run').classList.remove('stop')};
+
+// ---------- SESSION tab ----------
+let cur=null,sBusy=false;const S=makeRenderer($('#feed-sess'),$('#live-sess'));
 async function loadSessions(){const ss=await (await fetch('/api/sessions')).json();
   $('#sessList').innerHTML=ss.map(x=>`<div class="sitem ${x.id===cur?'on':''}" data-id="${x.id}">${x.alive?'🟢':'⚪'} ${esc(x.title)}${x.alive?`<button title="close sandbox" data-close="${x.id}">✕</button>`:''}<div class="m">${x.turns} turns · ${x.thinking} · ${x.created.slice(0,16).replace('T',' ')}</div></div>`).join('')||'<div class="status">none yet</div>';
   document.querySelectorAll('.sitem').forEach(d=>d.onclick=e=>{if(e.target.dataset.close)return;openSession(d.dataset.id)});
@@ -94,65 +163,24 @@ async function loadSessions(){const ss=await (await fetch('/api/sessions')).json
 $('#newSess').onclick=async()=>{$('#newSess').textContent='starting sandbox…';
   const r=await fetch('/api/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thinking:$('#sMode').value,sandbox:$('#sSandbox').value,task:$('#sTask').value||null,network:$('#sNet').checked})});
   const d=await r.json();$('#newSess').textContent='+ New session';if(d.error){alert(d.error);return}cur=d.id;await loadSessions();openSession(cur)};
-function renderTurn(t){let h=`<div class="ubub"><div class="hd">you</div><div class="md">${renderMd(t.user)}</div></div>`;
-  (t.transcript||[]).forEach(e=>{h+=`<div class="step"><div class="hd">step ${e.step}</div>${e.reasoning?`<div class="think">${esc(e.reasoning)}</div>`:''}${e.content?`<div class="say md">${renderMd(e.content)}</div>`:''}${(e.tool_calls||[]).map(c=>`<div class="tc"><span class="n">🔧 ${esc(c.name)}</span> ${fmtArgs(c.args)}</div><div class="out">${esc(c.output)}</div>`).join('')}</div>`});
-  if(t.stop_reason)h+=`<div class="status">${t.stop_reason} · ${t.steps} steps · ${t.wall_s?.toFixed?.(1)??t.wall_s}s · ${t.completion_tokens} tokens</div>`;if(t.error)h+=`<div class="status err">${esc(t.error)}</div>`;return h}
-async function openSession(id){cur=id;const d=await (await fetch('/api/sessions/'+id)).json();sLive.innerHTML=(d.turns||[]).map(renderTurn).join('')||`<div class="status">${d.alive?'Sandbox is up. Say what to build.':'This session is closed (sandbox gone); transcript only.'}</div>`;
-  if(!d.alive&&d.turns?.length)sLive.innerHTML+='<div class="status">session closed — sandbox gone, transcript only</div>';sLive.scrollTop=sLive.scrollHeight;loadSessions()}
+function renderTurn(t){let h=`<div class="ubub"><div class="hd">you</div><div class="md">${renderMd(t.user)}</div></div>`+renderTranscript(t.transcript);
+  if(t.stop_reason)h+=`<div class="status">${t.stop_reason} · ${t.steps} steps · ${typeof t.wall_s==='number'?t.wall_s.toFixed(1):t.wall_s}s · ${t.completion_tokens} tokens</div>`;if(t.error)h+=`<div class="status err">${esc(t.error)}</div>`;return h}
+async function openSession(id){cur=id;const d=await (await fetch('/api/sessions/'+id)).json();const f=$('#feed-sess');
+  f.innerHTML=(d.turns||[]).map(renderTurn).join('')||`<div class="status">${d.alive?'Sandbox is up. Say what to build.':'This session is closed (sandbox gone); transcript only.'}</div>`;
+  if(!d.alive&&d.turns?.length)f.innerHTML+='<div class="status">session closed — sandbox gone, transcript only</div>';wireCollapse(f);f.scrollTop=f.scrollHeight;loadSessions()}
 $('#sInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('#sSend').click()}});
 $('#sSend').onclick=async()=>{
   if(sBusy){fetch('/api/sessions/'+cur+'/stop',{method:'POST'});return}
   const text=$('#sInput').value.trim();if(!text)return;if(!cur){alert('Create a session first');return}
   $('#sInput').value='';sBusy=true;$('#sSend').textContent='■ Stop';$('#sSend').classList.add('stop');
-  sLive.appendChild(el(`<div class="ubub"><div class="hd">you</div><div class="md">${renderMd(text)}</div></div>`));
-  let step=null,think=null,say=null,sayTxt='',thinkTxt='';
-  const r=await fetch('/api/sessions/'+cur+'/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,thinking:$('#sMode').value})});
-  if(!r.ok){const d=await r.json();sLive.appendChild(el(`<div class="status err">${esc(d.error||r.status)}</div>`));sBusy=false;$('#sSend').textContent='Send';$('#sSend').classList.remove('stop');return}
-  const rd=r.body.getReader(),dec=new TextDecoder();let buf='';
-  while(true){const{done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
-    while((i=buf.indexOf('\n\n'))>=0){const blk=buf.slice(0,i);buf=buf.slice(i+2);const ev=/event: (\w+)/.exec(blk)?.[1];const d=JSON.parse(/data: (.*)/s.exec(blk)[1]);
-      if(ev==='step'){step=el(`<div class="step"><div class="hd">step ${d.step}</div></div>`);sLive.appendChild(step);think=null;say=null;sayTxt='';thinkTxt=''}
-      else if(ev==='reasoning'){if(!think){think=el('<div class="think"></div>');step.appendChild(think)}thinkTxt+=d.t;think.textContent=thinkTxt;think.scrollTop=think.scrollHeight}
-      else if(ev==='content'){if(!say){say=el('<div class="say md"></div>');step.appendChild(say)}sayTxt+=d.t;say.innerHTML=renderMd(sayTxt)}
-      else if(ev==='tool_call'){step.appendChild(el(`<div class="tc"><span class="n">🔧 ${esc(d.name)}</span> ${fmtArgs(d.args)}</div>`))}
-      else if(ev==='tool_result'){step.appendChild(el(`<div class="out">${esc(d.output)}</div>`))}
-      else if(ev==='agent_done'){sLive.appendChild(el(`<div class="status">${d.stop_reason} · ${d.steps} steps · ${d.wall_s}s · ${d.completion_tokens} tokens</div>`))}
-      else if(ev==='error'){sLive.appendChild(el(`<div class="status err">${esc(d.message)}</div>`))}
-      sLive.scrollTop=sLive.scrollHeight}}
-  sBusy=false;$('#sSend').textContent='Send';$('#sSend').classList.remove('stop');loadSessions()};
-function el(h){const d=document.createElement('div');d.innerHTML=h;return d.firstElementChild}
-function fmtArgs(a){if(typeof a==='string')return esc(a);const long=['content','command','old_string','new_string','summary'];let out='';
-  for(const k of Object.keys(a)){const v=a[k];if(long.includes(k)&&typeof v==='string')out+=`<div><span style="color:var(--mut)">${k}:</span><pre style="margin:2px 0 6px;white-space:pre-wrap">${esc(v)}</pre></div>`;else out+=`<span style="color:var(--mut)">${k}:</span> ${esc(JSON.stringify(v))}  `}
-  return out}function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
-$('#custom').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('#run').click()}});
-$('#run').onclick=async()=>{
-  if(job){fetch('/api/stop/'+job,{method:'POST'});$('#run').textContent='stopping…';return}
-  live.innerHTML='';const body={task:$('#task').value||null,instruction:$('#custom').value,thinking:$('#mode').value,sandbox:$('#sandbox').value,max_steps:+$('#steps').value,network:$('#net').checked};
-  if($('#maxtok').value)body.max_tokens=+$('#maxtok').value;
-  if(!body.task&&!body.instruction.trim()){alert('Pick a task or write an instruction');return}
-  if(body.sandbox==='local'&&!confirm('LOCAL sandbox: the model will run commands directly on this Mac with your permissions and no isolation. Only for debugging the harness. Continue?'))return;
-  $('#run').textContent='■ Stop';$('#run').classList.add('stop');
-  let step=null,think=null,say=null,sayTxt='',thinkTxt='';
-  const r=await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  const rd=r.body.getReader(),dec=new TextDecoder();let buf='';
-  while(true){const{done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
-    while((i=buf.indexOf('\n\n'))>=0){const blk=buf.slice(0,i);buf=buf.slice(i+2);const ev=/event: (\w+)/.exec(blk)?.[1];const d=JSON.parse(/data: (.*)/s.exec(blk)[1]);
-      if(ev==='job')job=d.job;
-      else if(ev==='status')live.appendChild(el(`<div class="status">${esc(d.t)}</div>`));
-      else if(ev==='step'){step=el(`<div class="step"><div class="hd">step ${d.step} / ${d.max_steps}</div></div>`);live.appendChild(step);think=null;say=null;sayTxt='';thinkTxt=''}
-      else if(ev==='reasoning'){if(!think){think=el('<div class="think"></div>');step.appendChild(think)}thinkTxt+=d.t;think.textContent=thinkTxt;think.scrollTop=think.scrollHeight}
-      else if(ev==='content'){if(!say){say=el('<div class="say md"></div>');step.appendChild(say)}sayTxt+=d.t;say.innerHTML=renderMd(sayTxt)}
-      else if(ev==='tool_call'){step.appendChild(el(`<div class="tc"><span class="n">🔧 ${esc(d.name)}</span> ${fmtArgs(d.args)}</div>`))}
-      else if(ev==='tool_result'){step.appendChild(el(`<div class="out">${esc(d.output)}</div>`))}
-      else if(ev==='agent_done'){live.appendChild(el(`<div class="status">agent ${d.finished?'finished':'stopped'} · ${d.stop_reason} · ${d.steps} steps · ${d.wall_s}s · ${d.completion_tokens} tokens generated${d.summary?'<br>📝 '+esc(d.summary):''}</div>`))}
-      else if(ev==='grade'){live.appendChild(el(`<div class="grade ${d.passed?'ok':'bad'}">${d.passed?'✅ PASSED':'❌ FAILED'} · reward ${d.reward}<pre>${esc(d.test_output)}</pre></div>`))}
-      else if(ev==='error'){live.appendChild(el(`<div class="status err">${esc(d.message)}</div>`))}
-      else if(ev==='saved'){live.appendChild(el(`<div class="status">saved ${esc(d.path)}</div>`))}
-      live.scrollTop=live.scrollHeight}}
-  job=null;$('#run').textContent='▶ Run agent';$('#run').classList.remove('stop');
-};
+  const f=$('#feed-sess');f.appendChild(el(`<div class="ubub"><div class="hd">you</div><div class="md">${renderMd(text)}</div></div>`));S.start();
+  try{const r=await fetch('/api/sessions/'+cur+'/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,thinking:$('#sMode').value})});
+    if(!r.ok){const d=await r.json();S.handle('error',{message:d.error||r.status})}else await readSSE(r,(ev,d)=>S.handle(ev,d))}catch(e){S.handle('error',{message:String(e)})}
+  S.stop();sBusy=false;$('#sSend').textContent='Send';$('#sSend').classList.remove('stop');loadSessions()};
+
+// ---------- PAST RUNS ----------
 async function loadRuns(){const rs=await (await fetch('/api/runs')).json();
-  $('#runs').innerHTML=rs.length?rs.map(r=>`<details><summary style="cursor:pointer"><b>${r.run_id}</b> — ${r.passed}/${r.n}</summary><div class="md">${renderMd(r.markdown)}</div><div id="d_${r.run_id}"><button onclick="showRun('${r.run_id}')" style="background:none;border:1px solid var(--line);color:var(--fg);padding:4px 8px;border-radius:6px;cursor:pointer">show transcripts</button></div></details>`).join(''):'<p>No runs yet.</p>'}
+  $('#runs').innerHTML=rs.length?rs.map(r=>`<details><summary style="cursor:pointer"><b>${r.run_id}</b> — ${r.passed}/${r.n}</summary><div class="md">${renderMd(r.markdown)}</div><div id="d_${r.run_id}"><button class="btn" style="width:auto;background:none;border:1px solid var(--line);color:var(--fg)" onclick="showRun('${r.run_id}')">show transcripts</button></div></details>`).join(''):'<p>No runs yet.</p>'}
 async function showRun(id){const recs=await (await fetch('/api/runs/'+id)).json();const box=document.getElementById('d_'+id);
-  box.innerHTML=recs.map(r=>`<details class="step"><summary style="cursor:pointer">${r.passed?'✅':'❌'} ${r.task} · ${r.steps??'-'} steps · ${r.wall_s}s · ${r.stop_reason??''}</summary>${(r.transcript||[]).map(e=>`<div class="hd">step ${e.step}</div>${e.reasoning?`<div class="think">${esc(e.reasoning)}</div>`:''}${e.content?`<div class="say md">${renderMd(e.content)}</div>`:''}${(e.tool_calls||[]).map(t=>`<div class="tc"><span class="n">🔧 ${esc(t.name)}</span> ${fmtArgs(t.args)}</div><div class="out">${esc(t.output)}</div>`).join('')}`).join('')}${r.test_output?`<div class="grade ${r.passed?'ok':'bad'}">grader<pre>${esc(r.test_output)}</pre></div>`:''}</details>`).join('')}
+  box.innerHTML=recs.map(r=>`<details class="step"><summary style="cursor:pointer;padding:6px 12px">${r.passed?'✅':'❌'} ${r.task} · ${r.steps??'-'} steps · ${r.wall_s}s · ${r.stop_reason??''}</summary><div class="body">${renderTranscript(r.transcript)}${r.test_output?`<div class="grade ${r.passed?'ok':'bad'}">grader<pre>${esc(r.test_output)}</pre></div>`:''}</div></details>`).join('');wireCollapse(box)}
 </script></body></html>
