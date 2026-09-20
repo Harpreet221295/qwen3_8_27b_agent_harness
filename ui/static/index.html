@@ -9,13 +9,17 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 -apple-system,Inter,Segoe UI,sans-serif;height:100vh;display:flex;flex-direction:column}
 header{display:flex;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}header b{font-size:15px}header .st{color:var(--mut);font-size:12px;margin-left:auto}
 nav button{background:none;border:1px solid var(--line);color:var(--fg);padding:5px 10px;border-radius:6px;cursor:pointer}nav button.on{background:var(--acc);color:#000;border-color:var(--acc)}
-main{flex:1;display:grid;grid-template-columns:340px 1fr;min-height:0}
+main{flex:1;display:grid;grid-template-columns:300px 1fr;min-height:0}
 aside{border-right:1px solid var(--line);padding:14px;overflow:auto;background:var(--panel)}
 aside label{display:block;color:var(--mut);font-size:12px;margin:10px 0 4px}aside select,aside input,aside textarea{width:100%;background:#0d0f15;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:6px}
-aside textarea{min-height:120px;resize:vertical;font-size:13px}.row{display:flex;gap:8px}.row>*{flex:1}
-#run{width:100%;margin-top:14px;background:var(--acc);color:#000;border:0;border-radius:8px;padding:10px;font-weight:600;cursor:pointer}#run.stop{background:var(--err);color:#fff}
+.row{display:flex;gap:8px}.row>*{flex:1}
+#work{display:flex;flex-direction:column;min-height:0}
+footer{border-top:1px solid var(--line);padding:12px 20px;background:var(--panel)}
+.box{max-width:1100px;margin:0 auto;display:flex;gap:8px;align-items:flex-end}
+.box textarea{flex:1;background:#0d0f15;border:1px solid var(--line);color:var(--fg);border-radius:10px;padding:10px 12px;min-height:46px;max-height:220px;resize:vertical;font-size:13.5px;font-family:inherit}
+#run{background:var(--acc);color:#000;border:0;border-radius:10px;padding:12px 18px;font-weight:600;cursor:pointer;white-space:nowrap}#run.stop{background:var(--err);color:#fff}
 #instr{color:var(--mut);font-size:12px;white-space:pre-wrap;background:#0d0f15;border:1px solid var(--line);border-radius:6px;padding:8px;max-height:220px;overflow:auto;margin-top:6px}
-#live{overflow:auto;padding:16px 20px}#runs{overflow:auto;padding:16px 20px}.hide{display:none}
+#live{flex:1;overflow:auto;padding:16px 20px}#runs{overflow:auto;padding:16px 20px}.hide{display:none}
 .step{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:8px 12px;margin-bottom:10px;max-width:1100px}
 .step .hd{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
 .think{border-left:3px solid var(--think);background:#1a1810;color:#d8c9a3;padding:6px 10px;border-radius:6px;margin:6px 0;white-space:pre-wrap;font-size:12.5px;max-height:220px;overflow:auto}
@@ -32,16 +36,19 @@ aside textarea{min-height:120px;resize:vertical;font-size:13px}.row{display:flex
 <main>
 <aside>
   <label>Task</label><select id="task"><option value="">— custom instruction —</option></select>
-  <div id="instr">Pick a task to see its instruction, or write your own below.</div>
-  <label>Custom instruction — if you type here, the task's files are still loaded but its grader is NOT run</label>
-  <textarea id="custom" placeholder="e.g. Create a Python script that prints the first 20 primes, run it, and show me the output."></textarea>
+  <div id="instr">Pick a task to see its instruction, or write your own in the box at the bottom.</div>
   <div class="row"><div><label>Thinking</label><select id="mode"><option value="off">off</option><option value="low">low</option><option value="medium">medium</option><option value="xhigh">xhigh</option></select></div>
   <div><label>Sandbox</label><select id="sandbox"><option value="docker">docker</option><option value="local">local ⚠ runs on YOUR Mac, no isolation</option><option value="e2b">e2b</option></select></div></div>
   <div class="row"><div><label>Max steps</label><input id="steps" type="number" value="30"></div><div><label>Max tokens / turn</label><input id="maxtok" type="number" placeholder="auto"></div></div>
   <label><input id="net" type="checkbox" style="width:auto"> allow internet in sandbox</label>
-  <button id="run">▶ Run agent</button>
+  <p style="color:var(--mut);font-size:11px;margin-top:16px">Typing an instruction below runs it in a fresh sandbox (task files loaded if a task is selected, no grader). Leave it empty and press Run to run the selected task with its grader.</p>
 </aside>
-<section id="live"></section>
+<section id="work">
+  <div id="live"></div>
+  <footer><div class="box">
+    <textarea id="custom" placeholder="Describe a task for the agent… (Enter to run, Shift+Enter for newline)"></textarea>
+    <button id="run">▶ Run agent</button></div></footer>
+</section>
 <section id="runs" class="hide"></section>
 </main>
 <script>
@@ -55,13 +62,14 @@ function renderMd(text){const M=[];const keep=(s,d)=>{M.push({s,d});return `@@MA
 
 fetch('/api/info').then(r=>r.json()).then(i=>{$('#status').textContent=`${i.model} · ${i.base_url.replace('https://','')} · docker ${i.docker?'ok':'NOT RUNNING (colima start)'}`;if(!i.docker)$('#status').classList.add('err')});
 fetch('/api/tasks').then(r=>r.json()).then(t=>{tasks=t;t.forEach(x=>{const o=document.createElement('option');o.value=x.name;o.textContent=`${x.name}  (${x.difficulty})`;$('#task').appendChild(o)})});
-$('#task').onchange=()=>{const t=tasks.find(x=>x.name===$('#task').value);$('#instr').textContent=t?t.instruction:'Pick a task to see its instruction, or write your own below.';if(t)$('#steps').value=t.max_steps};
-$('#tabLive').onclick=()=>{live.classList.remove('hide');$('#runs').classList.add('hide');$('#tabLive').classList.add('on');$('#tabRuns').classList.remove('on')};
-$('#tabRuns').onclick=()=>{live.classList.add('hide');$('#runs').classList.remove('hide');$('#tabRuns').classList.add('on');$('#tabLive').classList.remove('on');loadRuns()};
+$('#task').onchange=()=>{const t=tasks.find(x=>x.name===$('#task').value);$('#instr').textContent=t?t.instruction:'Pick a task to see its instruction, or write your own in the box at the bottom.';if(t)$('#steps').value=t.max_steps};
+$('#tabLive').onclick=()=>{$('#work').classList.remove('hide');$('#runs').classList.add('hide');$('#tabLive').classList.add('on');$('#tabRuns').classList.remove('on')};
+$('#tabRuns').onclick=()=>{$('#work').classList.add('hide');$('#runs').classList.remove('hide');$('#tabRuns').classList.add('on');$('#tabLive').classList.remove('on');loadRuns()};
 function el(h){const d=document.createElement('div');d.innerHTML=h;return d.firstElementChild}
 function fmtArgs(a){if(typeof a==='string')return esc(a);const long=['content','command','old_string','new_string','summary'];let out='';
   for(const k of Object.keys(a)){const v=a[k];if(long.includes(k)&&typeof v==='string')out+=`<div><span style="color:var(--mut)">${k}:</span><pre style="margin:2px 0 6px;white-space:pre-wrap">${esc(v)}</pre></div>`;else out+=`<span style="color:var(--mut)">${k}:</span> ${esc(JSON.stringify(v))}  `}
   return out}function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+$('#custom').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('#run').click()}});
 $('#run').onclick=async()=>{
   if(job){fetch('/api/stop/'+job,{method:'POST'});$('#run').textContent='stopping…';return}
   live.innerHTML='';const body={task:$('#task').value||null,instruction:$('#custom').value,thinking:$('#mode').value,sandbox:$('#sandbox').value,max_steps:+$('#steps').value,network:$('#net').checked};
