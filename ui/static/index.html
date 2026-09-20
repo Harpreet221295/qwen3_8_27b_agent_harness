@@ -16,8 +16,8 @@ aside label{display:block;color:var(--mut);font-size:12px;margin:10px 0 4px}asid
 #instr{color:var(--mut);font-size:12px;white-space:pre-wrap;background:#0d0f15;border:1px solid var(--line);border-radius:6px;padding:8px;max-height:220px;overflow:auto;margin-top:6px}
 .work{display:flex;flex-direction:column;min-height:0}.feed{flex:1;overflow:auto;padding:16px 20px}
 footer{border-top:1px solid var(--line);padding:10px 20px 12px;background:var(--panel)}
-.livebar{max-width:1100px;margin:0 auto 8px;display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--mut);min-height:18px}
-.livebar .dot{width:8px;height:8px;border-radius:50%;background:var(--acc);animation:pulse 1s infinite}.livebar.idle .dot{display:none}
+.livebar{max-width:1100px;display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--mut);min-height:18px;padding:2px 12px 10px}
+.livebar .dot{width:8px;height:8px;border-radius:50%;background:var(--acc);animation:pulse 1s infinite}
 .livebar .lbl{color:var(--fg)}.livebar .tok{margin-left:auto;font-variant-numeric:tabular-nums}
 @keyframes pulse{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
 @keyframes glow{0%,100%{border-left-color:var(--think);box-shadow:none}50%{border-left-color:#ffe2a8;box-shadow:-2px 0 12px -4px #ffd38a}}
@@ -61,8 +61,7 @@ footer{border-top:1px solid var(--line);padding:10px 20px 12px;background:var(--
     <label style="margin-top:14px"><input id="autoCollapse" type="checkbox" style="width:auto"> collapse finished steps automatically</label>
   </aside>
   <div class="work"><div class="feed" id="feed-run"></div>
-    <footer><div class="livebar idle" id="live-run"><span class="dot"></span><span class="lbl"></span><span class="tok"></span></div>
-    <div class="box"><textarea id="custom" placeholder="Describe a task for the agent… (Enter to run, Shift+Enter for newline)"></textarea><button id="run">▶ Run agent</button></div></footer>
+    <footer><div class="box"><textarea id="custom" placeholder="Describe a task for the agent… (Enter to run, Shift+Enter for newline)"></textarea><button id="run">▶ Run agent</button></div></footer>
   </div>
 </div>
 <!-- ============ SESSION: persistent sandbox, chat ============ -->
@@ -77,8 +76,7 @@ footer{border-top:1px solid var(--line);padding:10px 20px 12px;background:var(--
     <p style="color:var(--mut);font-size:11px;margin-top:12px">A session keeps one sandbox alive (2 GB RAM each) until you close it. Files persist across messages. Closed sessions keep their transcript.</p>
   </aside>
   <div class="work"><div class="feed" id="feed-sess"><div class="status">Create a session or pick one on the left.</div></div>
-    <footer><div class="livebar idle" id="live-sess"><span class="dot"></span><span class="lbl"></span><span class="tok"></span></div>
-    <div class="box"><textarea id="sInput" placeholder="Talk to the agent… (Enter to send, Shift+Enter for newline)"></textarea><button id="sSend">Send</button></div></footer>
+    <footer><div class="box"><textarea id="sInput" placeholder="Talk to the agent… (Enter to send, Shift+Enter for newline)"></textarea><button id="sSend">Send</button></div></footer>
   </div>
 </div>
 <!-- ============ PAST RUNS ============ -->
@@ -101,16 +99,18 @@ const verb={bash:'running bash',read_file:'reading file',write_file:'writing fil
 const fmtS=s=>s<60?`${s.toFixed(1)}s`:`${Math.floor(s/60)}m ${Math.round(s%60)}s`;
 
 // ---------- shared live renderer: feeds SSE events into a feed element + live status bar ----------
-function makeRenderer(feed,bar){
+function makeRenderer(feed){
   let step=null,body=null,think=null,say=null,sayTxt='',thinkTxt='',stepT0=0,stepTools=0,toolT0=0,curTc=null,t0=0,chars=0,timer=null,phase='';
+  const bar=el('<div class="livebar"><span class="dot"></span><span class="lbl"></span><span class="tok"></span></div>');
   const lbl=bar.querySelector('.lbl'),tok=bar.querySelector('.tok');
+  const keepLast=()=>{if(bar.parentNode===feed&&feed.lastElementChild!==bar)feed.appendChild(bar)};
   const tick=()=>{if(!t0)return;const e=(Date.now()-t0)/1000;lbl.textContent=`${phase}  ·  ${fmtS(e)}`;tok.textContent=`~${Math.round(chars/3.6)} tokens`;if(step&&step.classList.contains('running'))step.querySelector('.meta').textContent=`${stepTools} tool${stepTools===1?'':'s'} · ${fmtS((Date.now()-stepT0)/1000)}`};
   const setPhase=p=>{phase=p;tick()};
   const finishStep=()=>{if(!step)return;step.classList.remove('running');step.querySelector('.meta').textContent=`${stepTools} tool${stepTools===1?'':'s'} · ${fmtS((Date.now()-stepT0)/1000)}`;if($('#autoCollapse')?.checked)step.classList.add('collapsed')};
   const scroll=()=>{feed.scrollTop=feed.scrollHeight};
   return {
-    start(){t0=Date.now();chars=0;bar.classList.remove('idle');setPhase('starting');timer=setInterval(tick,200)},
-    stop(){finishStep();clearInterval(timer);timer=null;bar.classList.add('idle');lbl.textContent='';tok.textContent='';t0=0;step=null},
+    start(){t0=Date.now();chars=0;feed.appendChild(bar);setPhase('starting');timer=setInterval(tick,200)},
+    stop(){finishStep();clearInterval(timer);timer=null;bar.remove();lbl.textContent='';tok.textContent='';t0=0;step=null},
     handle(ev,d){
       if(ev==='status'){feed.appendChild(el(`<div class="status">${esc(d.t)}</div>`));setPhase(d.t)}
       else if(ev==='step'){finishStep();stepT0=Date.now();stepTools=0;step=el(`<div class="step running"><div class="hd"><span class="chev">▾</span> step ${d.step}${d.max_steps?' / '+d.max_steps:''}<span class="meta">…</span></div><div class="body"></div></div>`);
@@ -124,7 +124,7 @@ function makeRenderer(feed,bar){
       else if(ev==='grade'){feed.appendChild(el(`<div class="grade ${d.passed?'ok':'bad'}">${d.passed?'✅ PASSED':'❌ FAILED'} · reward ${d.reward}<pre>${esc(d.test_output)}</pre></div>`))}
       else if(ev==='error'){feed.appendChild(el(`<div class="status err">${esc(d.message)}</div>`))}
       else if(ev==='saved'){feed.appendChild(el(`<div class="status">saved ${esc(d.path)}</div>`))}
-      scroll()}
+      keepLast();scroll()}
   }}
 async function readSSE(resp,onEvent){const rd=resp.body.getReader(),dec=new TextDecoder();let buf='';
   while(true){const{done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
@@ -140,7 +140,7 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.query
 $('#task').onchange=()=>{const t=tasks.find(x=>x.name===$('#task').value);$('#instr').textContent=t?t.instruction:'Pick a task to see its instruction, or write your own in the box at the bottom.';if(t)$('#steps').value=t.max_steps};
 
 // ---------- RUN tab ----------
-let job=null;const R=makeRenderer($('#feed-run'),$('#live-run'));
+let job=null;const R=makeRenderer($('#feed-run'));
 $('#custom').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('#run').click()}});
 $('#run').onclick=async()=>{
   if(job){fetch('/api/stop/'+job,{method:'POST'});$('#run').textContent='stopping…';return}
@@ -155,7 +155,7 @@ $('#run').onclick=async()=>{
   R.stop();job=null;$('#run').textContent='▶ Run agent';$('#run').classList.remove('stop')};
 
 // ---------- SESSION tab ----------
-let cur=null,sBusy=false;const S=makeRenderer($('#feed-sess'),$('#live-sess'));
+let cur=null,sBusy=false;const S=makeRenderer($('#feed-sess'));
 async function loadSessions(){const ss=await (await fetch('/api/sessions')).json();
   $('#sessList').innerHTML=ss.map(x=>`<div class="sitem ${x.id===cur?'on':''}" data-id="${x.id}">${x.alive?'🟢':'⚪'} ${esc(x.title)}${x.alive?`<button title="close sandbox" data-close="${x.id}">✕</button>`:''}<div class="m">${x.turns} turns · ${x.thinking} · ${x.created.slice(0,16).replace('T',' ')}</div></div>`).join('')||'<div class="status">none yet</div>';
   document.querySelectorAll('.sitem').forEach(d=>d.onclick=e=>{if(e.target.dataset.close)return;openSession(d.dataset.id)});
