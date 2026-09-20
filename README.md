@@ -43,6 +43,13 @@ the agent's reasoning, tool calls and tool outputs stream live step by step, the
 between steps. The "Past runs" tab browses every `results/` run with full transcripts. UI runs are saved under
 `results/ui_runs/`.
 
+### Console tabs
+- **Run** — one task, fresh sandbox, graded. Custom text in the bottom bar = no grader.
+- **Session** — a persistent sandbox you chat with. Files and conversation persist across messages; plain
+  questions get a text reply, work requests get tool use. Sessions are listed on the left; ✕ deletes the
+  sandbox but keeps the transcript in `results/sessions/`. Each live session holds a 2 GB container.
+- **Past runs** — every batch run with transcripts.
+
 ## Run
 ```bash
 python run_eval.py --oracle                 # sanity: run reference solutions, all tasks must pass

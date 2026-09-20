@@ -19,7 +19,7 @@ footer{border-top:1px solid var(--line);padding:12px 20px;background:var(--panel
 .box textarea{flex:1;background:#0d0f15;border:1px solid var(--line);color:var(--fg);border-radius:10px;padding:10px 12px;min-height:46px;max-height:220px;resize:vertical;font-size:13.5px;font-family:inherit}
 #run{background:var(--acc);color:#000;border:0;border-radius:10px;padding:12px 18px;font-weight:600;cursor:pointer;white-space:nowrap}#run.stop{background:var(--err);color:#fff}
 #instr{color:var(--mut);font-size:12px;white-space:pre-wrap;background:#0d0f15;border:1px solid var(--line);border-radius:6px;padding:8px;max-height:220px;overflow:auto;margin-top:6px}
-#live{flex:1;overflow:auto;padding:16px 20px}#runs{overflow:auto;padding:16px 20px}.hide{display:none}
+#live{flex:1;overflow:auto;padding:16px 20px}#runs{overflow:auto;padding:16px 20px}.hide{display:none!important}
 .step{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:8px 12px;margin-bottom:10px;max-width:1100px}
 .step .hd{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
 .think{border-left:3px solid var(--think);background:#1a1810;color:#d8c9a3;padding:6px 10px;border-radius:6px;margin:6px 0;white-space:pre-wrap;font-size:12.5px;max-height:220px;overflow:auto}
@@ -29,12 +29,15 @@ footer{border-top:1px solid var(--line);padding:12px 20px;background:var(--panel
 .status{color:var(--mut);font-size:12px;margin:6px 0}.grade{border-radius:10px;padding:10px 14px;margin:10px 0;font-weight:600}.grade.ok{background:#12291d;border:1px solid var(--ok)}.grade.bad{background:#2b1518;border:1px solid var(--err)}
 .grade pre{font-weight:400;font-size:12px;white-space:pre-wrap;max-height:200px;overflow:auto;margin:6px 0 0}
 .err{color:var(--err)}table{border-collapse:collapse;width:100%;max-width:1000px}th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--mut)}tr.c{cursor:pointer}tr.c:hover{background:var(--panel)}
+.ubub{max-width:1100px;margin:0 0 12px;padding:8px 12px;border-radius:10px;border:1px solid #2f3b5e;background:#161c2e}.ubub .hd{font-size:11px;color:var(--mut);text-transform:uppercase}
+.sitem{padding:6px 8px;border:1px solid var(--line);border-radius:6px;margin:4px 0;cursor:pointer;font-size:12px}.sitem.on{border-color:var(--acc)}.sitem .m{color:var(--mut);font-size:11px}.sitem button{float:right;background:none;border:0;color:var(--mut);cursor:pointer}
+#sSend{background:var(--acc);color:#000;border:0;border-radius:10px;padding:12px 18px;font-weight:600;cursor:pointer;white-space:nowrap}#sSend.stop{background:var(--err);color:#fff}
 .md pre{background:#0d0f15;padding:8px;border-radius:6px;overflow:auto;font-size:12px}
 .katex-display{overflow-x:auto;padding:4px 0}.katex{font-size:1.05em}
 </style></head><body>
-<header><b>Qwen3.8-27B agent console</b><nav><button id="tabLive" class="on">Run</button><button id="tabRuns">Past runs</button></nav><span class="st" id="status">…</span></header>
+<header><b>Qwen3.8-27B agent console</b><nav><button id="tabLive" class="on">Run</button><button id="tabSess">Session</button><button id="tabRuns">Past runs</button></nav><span class="st" id="status">…</span></header>
 <main>
-<aside>
+<aside id="aside1">
   <label>Task</label><select id="task"><option value="">— custom instruction —</option></select>
   <div id="instr">Pick a task to see its instruction, or write your own in the box at the bottom.</div>
   <div class="row"><div><label>Thinking</label><select id="mode"><option value="off">off</option><option value="low">low</option><option value="medium">medium</option><option value="xhigh">xhigh</option></select></div>
@@ -50,6 +53,21 @@ footer{border-top:1px solid var(--line);padding:12px 20px;background:var(--panel
     <button id="run">▶ Run agent</button></div></footer>
 </section>
 <section id="runs" class="hide"></section>
+<section id="sess" style="display:none;grid-column:1/3;grid-template-columns:300px 1fr;min-height:0">
+  <aside>
+    <button id="newSess" style="width:100%;background:var(--acc);color:#000;border:0;border-radius:8px;padding:9px;font-weight:600;cursor:pointer">+ New session</button>
+    <div class="row" style="margin-top:8px"><div><label>Thinking</label><select id="sMode"><option value="off">off</option><option value="low">low</option><option value="medium">medium</option><option value="xhigh">xhigh</option></select></div>
+    <div><label>Sandbox</label><select id="sSandbox"><option value="docker">docker</option><option value="e2b">e2b</option></select></div></div>
+    <label>Start with a task's files (optional)</label><select id="sTask"><option value="">— empty workspace —</option></select>
+    <label><input id="sNet" type="checkbox" style="width:auto"> allow internet</label>
+    <label style="margin-top:14px">Sessions</label><div id="sessList"></div>
+    <p style="color:var(--mut);font-size:11px;margin-top:12px">A session keeps one sandbox alive (2 GB RAM each) until you close it. Files persist across messages. Closed sessions keep their transcript.</p>
+  </aside>
+  <div id="work2" style="display:flex;flex-direction:column;min-height:0">
+    <div id="sLive" style="flex:1;overflow:auto;padding:16px 20px"><div class="status">Create a session or pick one on the left.</div></div>
+    <footer><div class="box"><textarea id="sInput" placeholder="Talk to the agent… (Enter to send, Shift+Enter for newline)"></textarea><button id="sSend">Send</button></div></footer>
+  </div>
+</section>
 </main>
 <script>
 const $=s=>document.querySelector(s);const live=$('#live');let tasks=[],job=null,ctrl=null;marked.setOptions({breaks:true});
@@ -64,7 +82,44 @@ fetch('/api/info').then(r=>r.json()).then(i=>{$('#status').textContent=`${i.mode
 fetch('/api/tasks').then(r=>r.json()).then(t=>{tasks=t;t.forEach(x=>{const o=document.createElement('option');o.value=x.name;o.textContent=`${x.name}  (${x.difficulty})`;$('#task').appendChild(o)})});
 $('#task').onchange=()=>{const t=tasks.find(x=>x.name===$('#task').value);$('#instr').textContent=t?t.instruction:'Pick a task to see its instruction, or write your own in the box at the bottom.';if(t)$('#steps').value=t.max_steps};
 $('#tabLive').onclick=()=>{$('#work').classList.remove('hide');$('#runs').classList.add('hide');$('#tabLive').classList.add('on');$('#tabRuns').classList.remove('on')};
-$('#tabRuns').onclick=()=>{$('#work').classList.add('hide');$('#runs').classList.remove('hide');$('#tabRuns').classList.add('on');$('#tabLive').classList.remove('on');loadRuns()};
+const showTab=(name)=>{['Live','Sess','Runs'].forEach(t=>$('#tab'+t).classList.toggle('on',t===name));$('#work').classList.toggle('hide',name!=='Live');$('#aside1').classList.toggle('hide',name==='Sess');$('#runs').classList.toggle('hide',name!=='Runs');$('#sess').style.display=name==='Sess'?'grid':'none';};
+$('#tabLive').onclick=()=>showTab('Live');$('#tabRuns').onclick=()=>{showTab('Runs');loadRuns()};$('#tabSess').onclick=()=>{showTab('Sess');loadSessions()};
+// ---------------- sessions ----------------
+let cur=null,sBusy=false;const sLive=$('#sLive');
+fetch('/api/tasks').then(r=>r.json()).then(t=>t.forEach(x=>{const o=document.createElement('option');o.value=x.name;o.textContent=x.name;$('#sTask').appendChild(o)}));
+async function loadSessions(){const ss=await (await fetch('/api/sessions')).json();
+  $('#sessList').innerHTML=ss.map(x=>`<div class="sitem ${x.id===cur?'on':''}" data-id="${x.id}">${x.alive?'🟢':'⚪'} ${esc(x.title)}${x.alive?`<button title="close sandbox" data-close="${x.id}">✕</button>`:''}<div class="m">${x.turns} turns · ${x.thinking} · ${x.created.slice(0,16).replace('T',' ')}</div></div>`).join('')||'<div class="status">none yet</div>';
+  document.querySelectorAll('.sitem').forEach(d=>d.onclick=e=>{if(e.target.dataset.close)return;openSession(d.dataset.id)});
+  document.querySelectorAll('[data-close]').forEach(b=>b.onclick=async e=>{e.stopPropagation();if(!confirm('Close this session and delete its sandbox? The transcript is kept.'))return;await fetch('/api/sessions/'+b.dataset.close,{method:'DELETE'});loadSessions();if(cur===b.dataset.close)openSession(cur)})}
+$('#newSess').onclick=async()=>{$('#newSess').textContent='starting sandbox…';
+  const r=await fetch('/api/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thinking:$('#sMode').value,sandbox:$('#sSandbox').value,task:$('#sTask').value||null,network:$('#sNet').checked})});
+  const d=await r.json();$('#newSess').textContent='+ New session';if(d.error){alert(d.error);return}cur=d.id;await loadSessions();openSession(cur)};
+function renderTurn(t){let h=`<div class="ubub"><div class="hd">you</div><div class="md">${renderMd(t.user)}</div></div>`;
+  (t.transcript||[]).forEach(e=>{h+=`<div class="step"><div class="hd">step ${e.step}</div>${e.reasoning?`<div class="think">${esc(e.reasoning)}</div>`:''}${e.content?`<div class="say md">${renderMd(e.content)}</div>`:''}${(e.tool_calls||[]).map(c=>`<div class="tc"><span class="n">🔧 ${esc(c.name)}</span> ${fmtArgs(c.args)}</div><div class="out">${esc(c.output)}</div>`).join('')}</div>`});
+  if(t.stop_reason)h+=`<div class="status">${t.stop_reason} · ${t.steps} steps · ${t.wall_s?.toFixed?.(1)??t.wall_s}s · ${t.completion_tokens} tokens</div>`;if(t.error)h+=`<div class="status err">${esc(t.error)}</div>`;return h}
+async function openSession(id){cur=id;const d=await (await fetch('/api/sessions/'+id)).json();sLive.innerHTML=(d.turns||[]).map(renderTurn).join('')||`<div class="status">${d.alive?'Sandbox is up. Say what to build.':'This session is closed (sandbox gone); transcript only.'}</div>`;
+  if(!d.alive&&d.turns?.length)sLive.innerHTML+='<div class="status">session closed — sandbox gone, transcript only</div>';sLive.scrollTop=sLive.scrollHeight;loadSessions()}
+$('#sInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('#sSend').click()}});
+$('#sSend').onclick=async()=>{
+  if(sBusy){fetch('/api/sessions/'+cur+'/stop',{method:'POST'});return}
+  const text=$('#sInput').value.trim();if(!text)return;if(!cur){alert('Create a session first');return}
+  $('#sInput').value='';sBusy=true;$('#sSend').textContent='■ Stop';$('#sSend').classList.add('stop');
+  sLive.appendChild(el(`<div class="ubub"><div class="hd">you</div><div class="md">${renderMd(text)}</div></div>`));
+  let step=null,think=null,say=null,sayTxt='',thinkTxt='';
+  const r=await fetch('/api/sessions/'+cur+'/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,thinking:$('#sMode').value})});
+  if(!r.ok){const d=await r.json();sLive.appendChild(el(`<div class="status err">${esc(d.error||r.status)}</div>`));sBusy=false;$('#sSend').textContent='Send';$('#sSend').classList.remove('stop');return}
+  const rd=r.body.getReader(),dec=new TextDecoder();let buf='';
+  while(true){const{done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
+    while((i=buf.indexOf('\n\n'))>=0){const blk=buf.slice(0,i);buf=buf.slice(i+2);const ev=/event: (\w+)/.exec(blk)?.[1];const d=JSON.parse(/data: (.*)/s.exec(blk)[1]);
+      if(ev==='step'){step=el(`<div class="step"><div class="hd">step ${d.step}</div></div>`);sLive.appendChild(step);think=null;say=null;sayTxt='';thinkTxt=''}
+      else if(ev==='reasoning'){if(!think){think=el('<div class="think"></div>');step.appendChild(think)}thinkTxt+=d.t;think.textContent=thinkTxt;think.scrollTop=think.scrollHeight}
+      else if(ev==='content'){if(!say){say=el('<div class="say md"></div>');step.appendChild(say)}sayTxt+=d.t;say.innerHTML=renderMd(sayTxt)}
+      else if(ev==='tool_call'){step.appendChild(el(`<div class="tc"><span class="n">🔧 ${esc(d.name)}</span> ${fmtArgs(d.args)}</div>`))}
+      else if(ev==='tool_result'){step.appendChild(el(`<div class="out">${esc(d.output)}</div>`))}
+      else if(ev==='agent_done'){sLive.appendChild(el(`<div class="status">${d.stop_reason} · ${d.steps} steps · ${d.wall_s}s · ${d.completion_tokens} tokens</div>`))}
+      else if(ev==='error'){sLive.appendChild(el(`<div class="status err">${esc(d.message)}</div>`))}
+      sLive.scrollTop=sLive.scrollHeight}}
+  sBusy=false;$('#sSend').textContent='Send';$('#sSend').classList.remove('stop');loadSessions()};
 function el(h){const d=document.createElement('div');d.innerHTML=h;return d.firstElementChild}
 function fmtArgs(a){if(typeof a==='string')return esc(a);const long=['content','command','old_string','new_string','summary'];let out='';
   for(const k of Object.keys(a)){const v=a[k];if(long.includes(k)&&typeof v==='string')out+=`<div><span style="color:var(--mut)">${k}:</span><pre style="margin:2px 0 6px;white-space:pre-wrap">${esc(v)}</pre></div>`;else out+=`<span style="color:var(--mut)">${k}:</span> ${esc(JSON.stringify(v))}  `}

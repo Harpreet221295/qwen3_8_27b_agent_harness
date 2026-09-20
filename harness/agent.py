@@ -18,6 +18,17 @@ Rules:
 - When the task is done and verified, call finish with a one-paragraph summary. Always call finish before stopping.
 """
 
+CHAT_SYSTEM_PROMPT = """You are a software engineering agent working in a persistent Linux sandbox with the user.
+The workspace is /app (your current directory). Tools: bash, read_file, write_file, edit_file, finish.
+Files and state persist across the whole conversation, so build on your earlier work.
+
+Rules:
+- When the user asks for work, do it with tools: inspect, change, verify by running it.
+- When the user just chats, asks a question, or nothing needs doing, reply in plain text without tools.
+- Call finish only when a requested piece of work is complete and verified; put a short summary in it.
+- Do not invent results; report what the tools actually showed.
+"""
+
 FALLBACK_RE = re.compile(r"<tool_call>\s*(\{.*?\})\s*</tool_call>", re.S)
 EventFn = Callable[[str, dict], None]
 
@@ -39,8 +50,10 @@ class AgentResult:
 class Agent:
     def __init__(self, executor: ToolExecutor, thinking: str = "off", max_steps: int = 30, max_tokens: int = 4096,
                  model: str | None = None, temperature: float | None = None, verbose: bool = False,
-                 on_event: EventFn | None = None, stream: bool = True, should_stop: Callable[[], bool] | None = None):
+                 on_event: EventFn | None = None, stream: bool = True, should_stop: Callable[[], bool] | None = None,
+                 chat_mode: bool = False):
         self.ex, self.thinking, self.max_steps, self.max_tokens = executor, thinking, max_steps, max_tokens
+        self.chat_mode = chat_mode
         self.model = model or config.MODEL; self.verbose = verbose
         self.on_event = on_event or (lambda kind, data: None); self.stream = stream
         self.should_stop = should_stop or (lambda: False)
@@ -91,7 +104,16 @@ class Agent:
         return "".join(content), "".join(reasoning), [(c["id"], c["name"], c["arguments"]) for c in calls.values()], usage, finish
 
     def run(self, instruction: str) -> AgentResult:
-        msgs = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": instruction}]
+        msgs = [{"role": "system", "content": CHAT_SYSTEM_PROMPT if self.chat_mode else SYSTEM_PROMPT}, {"role": "user", "content": instruction}]
+        return self.loop(msgs)
+
+    def run_turn(self, msgs: list, user_text: str) -> AgentResult:
+        """Session mode: append the user's message to an existing conversation and run until the agent replies or finishes."""
+        if not msgs: msgs.append({"role": "system", "content": CHAT_SYSTEM_PROMPT})
+        msgs.append({"role": "user", "content": user_text})
+        return self.loop(msgs)
+
+    def loop(self, msgs: list) -> AgentResult:
         transcript, t0 = [], time.time()
         ptoks = ctoks = fallback = errors = 0
         for step in range(1, self.max_steps + 1):
@@ -116,6 +138,8 @@ class Agent:
                 transcript.append(entry)
                 if finish_reason == "length":
                     msgs.append({"role": "user", "content": "Your output was cut off. Continue, using tools. Call finish when done."}); continue
+                if self.chat_mode:
+                    return self._done(True, step, "reply", content, ptoks, ctoks, t0, transcript, fallback, errors)
                 if any(t.get("nudged") for t in transcript[-3:]):
                     return self._done(False, step, "no_tool_call", content, ptoks, ctoks, t0, transcript, fallback, errors)
                 entry["nudged"] = True
