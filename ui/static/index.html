@@ -163,7 +163,7 @@ async function loadSessions(){const ss=await (await fetch('/api/sessions')).json
 $('#newSess').onclick=async()=>{$('#newSess').textContent='starting sandbox…';
   const r=await fetch('/api/sessions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thinking:$('#sMode').value,sandbox:$('#sSandbox').value,task:$('#sTask').value||null,network:$('#sNet').checked})});
   const d=await r.json();$('#newSess').textContent='+ New session';if(d.error){alert(d.error);return}cur=d.id;await loadSessions();openSession(cur)};
-function renderTurn(t){let h=`<div class="ubub"><div class="hd">you</div><div class="md">${renderMd(t.user)}</div></div>`+renderTranscript(t.transcript);
+function renderTurn(t){let h=`<div class="ubub"><div class="hd">you${t.thinking?' · thinking '+t.thinking:''}</div><div class="md">${renderMd(t.user)}</div></div>`+renderTranscript(t.transcript);
   if(t.stop_reason)h+=`<div class="status">${t.stop_reason} · ${t.steps} steps · ${typeof t.wall_s==='number'?t.wall_s.toFixed(1):t.wall_s}s · ${t.completion_tokens} tokens</div>`;if(t.error)h+=`<div class="status err">${esc(t.error)}</div>`;return h}
 async function openSession(id){cur=id;const d=await (await fetch('/api/sessions/'+id)).json();const f=$('#feed-sess');
   f.innerHTML=(d.turns||[]).map(renderTurn).join('')||`<div class="status">${d.alive?'Sandbox is up. Say what to build.':'This session is closed (sandbox gone); transcript only.'}</div>`;

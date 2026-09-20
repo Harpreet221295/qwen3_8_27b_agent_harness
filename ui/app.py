@@ -202,13 +202,14 @@ async def session_message(sid: str, req: Request):
     if s["busy"]: return JSONResponse({"error": "session is busy"}, status_code=409)
     body = await req.json(); text = (body.get("text") or "").strip()
     if not text: return JSONResponse({"error": "empty"}, status_code=400)
-    thinking = body.get("thinking") or s["thinking"]
+    thinking = body.get("thinking") or s["thinking"]; s["thinking"] = thinking   # list shows the mode actually in use
     q: queue.Queue = queue.Queue(); emit = lambda kind, data: q.put((kind, data))
+    emit("status", {"t": f"thinking={thinking}"})
     s["busy"] = True; s["stop"].clear()
     if len(s["turns"]) == 0 and s["title"] in ("new session", f"{s['task']} session"): s["title"] = text[:60]
 
     def worker():
-        turn = {"user": text, "started": datetime.now().isoformat(), "events": []}
+        turn = {"user": text, "started": datetime.now().isoformat(), "thinking": thinking, "events": []}
         try:
             agent = Agent(s["ex"], thinking=thinking, max_steps=s["max_steps"], max_tokens=int(body.get("max_tokens", 4096 if thinking == "off" else 16384)),
                           on_event=emit, should_stop=s["stop"].is_set, chat_mode=True)
