@@ -100,7 +100,9 @@ class Agent:
                 c = calls.setdefault(tc.index, {"id": tc.id or f"call_{tc.index}", "name": "", "arguments": ""})
                 if tc.id: c["id"] = tc.id
                 if tc.function and tc.function.name: c["name"] += tc.function.name
-                if tc.function and tc.function.arguments: c["arguments"] += tc.function.arguments
+                frag = tc.function.arguments if tc.function and tc.function.arguments else ""
+                if frag: c["arguments"] += frag
+                self.on_event("tool_delta", {"index": tc.index, "name": c["name"], "t": frag})
         return "".join(content), "".join(reasoning), [(c["id"], c["name"], c["arguments"]) for c in calls.values()], usage, finish
 
     def run(self, instruction: str) -> AgentResult:

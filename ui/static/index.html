@@ -34,6 +34,7 @@ footer{border-top:1px solid var(--line);padding:10px 20px 12px;background:var(--
 .think.live{animation:glow 1.4s infinite}
 .say{margin:6px 0}.say p{margin:.3em 0}
 .tc{border-left:3px solid var(--tool);background:#101a22;padding:6px 10px;border-radius:6px;margin:6px 0;font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap}
+.tc.live{border-left-style:dashed}.tc.live pre{margin:2px 0 0;white-space:pre-wrap;max-height:300px;overflow:auto}
 .tc .n{color:var(--tool);font-weight:700}.tc .st{float:right;color:var(--mut);font-family:inherit;font-size:11px}
 .tc .spin{display:inline-block;width:10px;height:10px;border:2px solid var(--tool);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-1px}
 .out{color:#b7c2d0;border-left:3px solid #2f3b4a;background:#0d1117;padding:6px 10px;border-radius:6px;margin:4px 0 8px;font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap;max-height:260px;overflow:auto}
@@ -95,12 +96,20 @@ function renderMd(text){const M=[];const keep=(s,d)=>{M.push({s,d});return `@@MA
 function fmtArgs(a){if(typeof a==='string')return esc(a);if(!a)return '';const long=['content','command','old_string','new_string','summary'];let out='';
   for(const k of Object.keys(a)){const v=a[k];if(long.includes(k)&&typeof v==='string')out+=`<div><span style="color:var(--mut)">${k}:</span><pre style="margin:2px 0 6px;white-space:pre-wrap">${esc(v)}</pre></div>`;else out+=`<span style="color:var(--mut)">${k}:</span> ${esc(JSON.stringify(v))}  `}
   return out}
+// preview of a tool call whose JSON arguments are still streaming: pull out the long text field so far
+function partialArgs(raw){const keys=['content','command','new_string','old_string','summary'];let best=-1,key='';
+  for(const k of keys){const i=raw.lastIndexOf('"'+k+'"');if(i>best){best=i;key=k}}
+  const path=/"path"\s*:\s*"([^"]*)"/.exec(raw)?.[1];const head=path?`path: ${path}`:'';
+  if(best<0)return {head,body:raw.slice(0,400)};
+  let v=raw.slice(best);const q=v.indexOf(':');v=v.slice(q+1).replace(/^\s*"/,'');
+  v=v.replace(/\\n/g,'\n').replace(/\\t/g,'\t').replace(/\\"/g,'"').replace(/\\\\/g,'\\');
+  return {head:(head?head+'  ·  ':'')+key+':',body:v}}
 const verb={bash:'running bash',read_file:'reading file',write_file:'writing file',edit_file:'editing file',finish:'finishing'};
 const fmtS=s=>s<60?`${s.toFixed(1)}s`:`${Math.floor(s/60)}m ${Math.round(s%60)}s`;
 
 // ---------- shared live renderer: feeds SSE events into a feed element + live status bar ----------
 function makeRenderer(feed){
-  let step=null,body=null,think=null,say=null,sayTxt='',thinkTxt='',stepT0=0,stepTools=0,toolT0=0,curTc=null,t0=0,chars=0,timer=null,phase='';
+  let step=null,body=null,think=null,say=null,sayTxt='',thinkTxt='',stepT0=0,stepTools=0,toolT0=0,curTc=null,t0=0,chars=0,timer=null,phase='';const pend={};
   const bar=el('<div class="livebar"><span class="dot"></span><span class="lbl"></span><span class="tok"></span></div>');
   const lbl=bar.querySelector('.lbl'),tok=bar.querySelector('.tok');
   const keepLast=()=>{if(bar.parentNode===feed&&feed.lastElementChild!==bar)feed.appendChild(bar)};
@@ -117,7 +126,14 @@ function makeRenderer(feed){
         step.querySelector('.hd').onclick=()=>step.classList.toggle('collapsed');body=step.querySelector('.body');feed.appendChild(step);think=null;say=null;sayTxt='';thinkTxt='';setPhase('thinking')}
       else if(ev==='reasoning'){if(!think){think=el('<div class="think live"></div>');body.appendChild(think)}thinkTxt+=d.t;chars+=d.t.length;think.textContent=thinkTxt;think.scrollTop=think.scrollHeight;setPhase('thinking')}
       else if(ev==='content'){if(think)think.classList.remove('live');if(!say){say=el('<div class="say md"></div>');body.appendChild(say)}sayTxt+=d.t;chars+=d.t.length;say.innerHTML=renderMd(sayTxt);setPhase('writing')}
-      else if(ev==='tool_call'){if(think)think.classList.remove('live');stepTools++;toolT0=Date.now();chars+=JSON.stringify(d.args||'').length;
+      else if(ev==='tool_delta'){if(think)think.classList.remove('live');let P=pend[d.index];
+        if(!P){P=pend[d.index]={raw:'',el:el(`<div class="tc live"><span class="st"><span class="spin"></span></span><span class="n">🔧 ${esc(d.name||'…')}</span> <span class="mut"></span><pre></pre></div>`)};body.appendChild(P.el)}
+        P.raw+=d.t;chars+=d.t.length;if(d.name&&!P.named){P.el.querySelector('.n').textContent='🔧 '+d.name;P.named=true}
+        const pv=partialArgs(P.raw);P.el.querySelector('.mut').textContent=pv.head;const pre=P.el.querySelector('pre');pre.textContent=pv.body;pre.scrollTop=pre.scrollHeight;
+        setPhase((verb[d.name]||'calling '+d.name).replace('running','preparing').replace('writing file','writing file').replace('editing file','preparing edit'))}
+      else if(ev==='tool_call'){if(think)think.classList.remove('live');stepTools++;toolT0=Date.now();
+        // replace the streaming preview (first pending, in order) with the final formatted call
+        const k=Object.keys(pend)[0];if(k!==undefined){pend[k].el.remove();delete pend[k]}else chars+=JSON.stringify(d.args||'').length;
         curTc=el(`<div class="tc"><span class="st"><span class="spin"></span></span><span class="n">🔧 ${esc(d.name)}</span> ${fmtArgs(d.args)}</div>`);body.appendChild(curTc);setPhase(verb[d.name]||('running '+d.name))}
       else if(ev==='tool_result'){if(curTc)curTc.querySelector('.st').innerHTML=`✓ ${fmtS((Date.now()-toolT0)/1000)}`;body.appendChild(el(`<div class="out">${esc(d.output)}</div>`));setPhase('thinking')}
       else if(ev==='agent_done'){finishStep();chars=0;feed.appendChild(el(`<div class="status">${d.finished?'✅ agent finished':'⏹ agent stopped'} · ${d.stop_reason} · ${d.steps} steps · ${d.wall_s}s · ${d.completion_tokens} tokens generated${d.summary&&d.stop_reason==='finish'?'<br>📝 '+esc(d.summary):''}</div>`));tok.textContent=`${d.completion_tokens} tokens`}
