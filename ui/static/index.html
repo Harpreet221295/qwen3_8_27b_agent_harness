@@ -36,7 +36,7 @@ aside textarea{min-height:120px;resize:vertical;font-size:13px}.row{display:flex
   <label>Custom instruction (overrides the task's text; graded only when a task is selected and you leave this empty)</label>
   <textarea id="custom" placeholder="e.g. Create a Python script that prints the first 20 primes, run it, and show me the output."></textarea>
   <div class="row"><div><label>Thinking</label><select id="mode"><option value="off">off</option><option value="low">low</option><option value="medium">medium</option><option value="xhigh">xhigh</option></select></div>
-  <div><label>Sandbox</label><select id="sandbox"><option value="docker">docker</option><option value="local">local (no isolation)</option><option value="e2b">e2b</option></select></div></div>
+  <div><label>Sandbox</label><select id="sandbox"><option value="docker">docker</option><option value="local">local ⚠ runs on YOUR Mac, no isolation</option><option value="e2b">e2b</option></select></div></div>
   <div class="row"><div><label>Max steps</label><input id="steps" type="number" value="30"></div><div><label>Max tokens / turn</label><input id="maxtok" type="number" placeholder="auto"></div></div>
   <label><input id="net" type="checkbox" style="width:auto"> allow internet in sandbox</label>
   <button id="run">▶ Run agent</button>
@@ -64,6 +64,7 @@ $('#run').onclick=async()=>{
   live.innerHTML='';const body={task:$('#task').value||null,instruction:$('#custom').value,thinking:$('#mode').value,sandbox:$('#sandbox').value,max_steps:+$('#steps').value,network:$('#net').checked};
   if($('#maxtok').value)body.max_tokens=+$('#maxtok').value;
   if(!body.task&&!body.instruction.trim()){alert('Pick a task or write an instruction');return}
+  if(body.sandbox==='local'&&!confirm('LOCAL sandbox: the model will run commands directly on this Mac with your permissions and no isolation. Only for debugging the harness. Continue?'))return;
   $('#run').textContent='■ Stop';$('#run').classList.add('stop');
   let step=null,think=null,say=null,sayTxt='',thinkTxt='';
   const r=await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
