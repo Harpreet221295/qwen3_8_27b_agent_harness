@@ -152,6 +152,9 @@ function wireCollapse(root){root.querySelectorAll('.step>.hd').forEach(h=>h.oncl
 // ---------- header / tabs ----------
 fetch('/api/info').then(r=>r.json()).then(i=>{$('#status').textContent=`${i.model} · ${i.base_url.replace('https://','')} · docker ${i.docker?'ok':'NOT RUNNING (colima start)'}`;if(!i.docker)$('#status').classList.add('err')});
 let tasks=[];fetch('/api/tasks').then(r=>r.json()).then(t=>{tasks=t;t.forEach(x=>{const o=document.createElement('option');o.value=x.name;o.textContent=`${x.name}  (${x.difficulty})`;$('#task').appendChild(o);const o2=o.cloneNode(true);o2.textContent=x.name;$('#sTask').appendChild(o2)})});
+const H=Object.fromEntries(location.hash.slice(1).split('&').filter(Boolean).map(kv=>kv.split('=')));
+if(H.run){setTimeout(async()=>{document.querySelector('nav button[data-tab=runs]').click();await new Promise(r=>setTimeout(r,400));await showRun(H.run);const d=document.getElementById('d_'+H.run);if(d){d.closest('details').open=true;d.querySelectorAll('details').forEach((x,i)=>{if(i<2)x.open=true})}},300)}
+if(H.session){setTimeout(async()=>{document.querySelector('nav button[data-tab=sess]').click();await new Promise(r=>setTimeout(r,400));openSession(H.session)},300)}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));['run','sess','runs'].forEach(p=>$('#page-'+p).classList.toggle('hide',p!==b.dataset.tab));if(b.dataset.tab==='runs')loadRuns();if(b.dataset.tab==='sess')loadSessions()});
 $('#task').onchange=()=>{const t=tasks.find(x=>x.name===$('#task').value);$('#instr').textContent=t?t.instruction:'Pick a task to see its instruction, or write your own in the box at the bottom.';if(t)$('#steps').value=t.max_steps};
 
