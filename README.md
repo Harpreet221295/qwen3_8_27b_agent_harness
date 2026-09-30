@@ -62,6 +62,21 @@ flowchart LR
 
 **12/12.** Zero malformed tool calls. Full transcripts and notes: [RESULTS.md](RESULTS.md). The set is too easy to separate strong models; harder, longer tasks and pass@3 are next.
 
+## Beyond evaluation: a training environment
+
+The pieces an agentic RL loop needs are already here: a fresh sandbox per rollout, a verifiable reward from the task's own
+`tests/test.sh` (0/1, partial credit allowed), full multi-turn transcripts per attempt (`results/<run>/<task>_r<N>.json`), and `--repeats` for several attempts per task.
+That makes the same tasks usable for:
+
+- **RL on coding and terminal-use agents**: GRPO-style group rollouts per task, with the test script as the reward. The tasks already span both:
+  fixing code and builds, and shell work like log analysis, git, SQLite, file organization and offline package installs.
+- **Rejection-sampling SFT**: keep only the transcripts that pass the grader and fine-tune on them.
+- **On-policy distillation**: a teacher scores or corrects the student's own trajectories, in the same sandboxes.
+- **Regression checks**: rerun the set between model, prompt or thinking-mode versions and diff the grades and transcripts.
+- **Side-by-side model comparison**: any OpenAI-compatible endpoint with tool calls runs the same tasks.
+
+The harness ships the environment side (tasks, sandbox, grader, transcripts); it does not include a trainer.
+
 ## Quick start
 
 ```bash
